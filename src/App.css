@@ -1,28 +1,81 @@
+@import '~antd/dist/antd.css';
+
 .App {
-  text-align: center;
+  display: flex;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
+.left-column,
+.right-column {
+  height: 100vh;
+  overflow: scroll;
 }
 
-.App-header {
-  background-color: #222;
+/* left-column*/
+.left-column {
+  width: 250px;
+  background-color: #f7f7f7;
+}
+.left-filter .card-header {
+  border-bottom: 0px;
+}
+
+.left-body li {
+  display: flex;
+  justify-content: flex-start;
+  border-bottom: 1px solid #cfcfcf;
+}
+.left-body li img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid #cfcfcf;
+  margin: 10px;
+}
+.left-body li p {
+  margin: 10px 0px 0px 0px;
+  font-size: 1.2rem;
+}
+
+/* right-column*/
+.right-column {
+  flex-grow: 1;
+}
+.right-header {
+  display: flex;
+  justify-content: flex-end;
+}
+/* Need to fix the btn width to match content*/
+.right-header .btn {
+  outline: none;
+  box-shadow: none;
+  width: 160px;
+  margin: 10px;
+}
+.right-header img {
+  width: 60px;
+  border-radius: 50%;
+}
+
+.right-general-info {
+  display: flex;
+}
+.right-general-info img {
+  width: 150px;
   height: 150px;
-  padding: 20px;
-  color: white;
+  margin: 0px 20px 0px 20px;
+  border-radius: 50%;
+  border: 1px solid #cfcfcf;
 }
-
-.App-title {
-  font-size: 1.5em;
+.right-general-info .user-general-info {
+  flex-grow: 1;
 }
-
-.App-intro {
-  font-size: large;
+.right-general-info .useraccounts ul {
+  list-style: none;
+  max-width: 600px;
+  display: grid;
+  grid-template-columns: 50% 50%;
+  margin-top: 20px;
 }
-
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.right-tabs {
+  text-align: center;
 }
