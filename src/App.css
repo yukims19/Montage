@@ -18,7 +18,13 @@
 .left-filter .card-header {
   border-bottom: 0px;
 }
-
+.left-filter .ant-collapse {
+  border: none;
+}
+.left-filter .ant-collapse .ant-collapse-header,
+.left-filter .ant-collapse .ant-collapse-content {
+  border: none;
+}
 .left-body li {
   display: flex;
   justify-content: flex-start;
