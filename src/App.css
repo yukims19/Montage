@@ -82,10 +82,11 @@
   grid-template-columns: 50% 50%;
   margin-top: 20px;
 }
-/* Right Tab Info */
+/** Right Tab Info **/
 .right-tabs {
   text-align: center;
 }
+/* GitHub Tab*/
 .tab-github .github-summary {
   display: flex;
   justify-content: center;
@@ -132,6 +133,30 @@
   display: inline-block;
   margin-right: 10px;
   font-size: 0.9rem;
+}
+
+/* Youtube Tab */
+.tab-youtube .video-title {
+  width: 560px;
+  margin: auto;
+  font-size: 1.2rem;
+  text-align: left;
+  color: black;
+}
+.tab-youtube .video-stats {
+  width: 560px;
+  display: flex;
+  justify-content: space-between;
+  margin: auto;
+  margin-bottom: 60px;
+  font-size: 1rem;
+}
+.tab-youtube .video-stats .thumbs {
+  display: flex;
+  justify-content: flex-end;
+}
+.tab-youtube .video-stats .thumbs div {
+  margin: 0px 10px 0px 10px;
 }
 
 /*Login Buttons*/

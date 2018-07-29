@@ -24,10 +24,225 @@ const Panel = Collapse.Panel;
 const plainOptions = ["1 mathch", "2 mathch", "3 match"];
 const defaultCheckedList = ["1 mathch", "2 mathch", "3 match"];
 
+const URL = "https://news.ycombinator.com/user?id=tlrobinson";
+//"http://www.riseos.com/";
 let target = {
   github: "sgrove",
-  twitter: "sgrove"
+  twitter: "sgrove",
+  hackerNews: null,
+  reddit: null
 };
+
+const GET_YoutubeQuery = gql`
+  query(
+    $hackernews: String!
+    $github: String!
+    $twitter: String!
+    $reddit: String!
+  ) {
+    eventil {
+      user(
+        hackernews: $hackernews
+        github: $github
+        twitter: $twitter
+        reddit: $reddit
+      ) {
+        id
+        presentations {
+          id
+          video_url
+          draft {
+            title
+          }
+          youtubeVideo {
+            id
+            statistics {
+              viewCount
+              dislikeCount
+              likeCount
+            }
+          }
+        }
+      }
+    }
+    descuri(url: $URL) {
+      other {
+        descuri {
+          youTube {
+            uri
+          }
+        }
+        uri
+      }
+    }
+  }
+`;
+
+const GET_DescuriYoutubeStats = gql`
+  query($id: String!) {
+    youTubeVideo(id: $id) {
+      statistics {
+        dislikeCount
+        likeCount
+        viewCount
+      }
+      id
+      snippet {
+        title
+      }
+    }
+  }
+`;
+
+class DescuriYoutubeStats extends Component {
+  render() {
+    if (!this.props.videoId) {
+      return <div />;
+    } else {
+      return (
+        <Query
+          query={GET_DescuriYoutubeStats}
+          variables={{
+            id: this.props.videoId
+          }}
+        >
+          {({ loading, error, data }) => {
+            if (loading) return <div>Loading...</div>;
+            if (error) {
+              console.log(error);
+              return <div>Uh oh, something went wrong!</div>;
+            }
+            return (
+              <div>
+                <p className="video-title">
+                  {idx(data, _ => _.youTubeVideo.snippet.title)}
+                </p>
+                <div className="video-stats">
+                  <div>
+                    {idx(data, _ => _.youTubeVideo.statistics.viewCount)} views
+                  </div>
+                  <div className="thumbs">
+                    <div>
+                      <i className="fas fa-thumbs-up" />{" "}
+                      {idx(data, _ => _.youTubeVideo.statistics.likeCount)}
+                    </div>
+                    <div>
+                      <i className="fas fa-thumbs-down" />{" "}
+                      {idx(data, _ => _.youTubeVideo.statistics.dislikeCount)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }}
+        </Query>
+      );
+    }
+  }
+}
+
+class YoutubeInfo extends Component {
+  render() {
+    return (
+      <Query
+        query={GET_YoutubeQuery}
+        variables={{
+          hackernews: target.hackerNews,
+          github: target.gitHub,
+          twitter: target.twitter,
+          reddit: target.reddit,
+          URL: URL
+        }}
+      >
+        {({ loading, error, data }) => {
+          if (loading) return <div>Loading...</div>;
+          if (error) {
+            console.log(error);
+            return <div>Uh oh, something went wrong!</div>;
+          }
+          console.log(data);
+          let eventil_video = null;
+          let descuri_video = null;
+          if (idx(data, _ => _.eventil.user.presentations)) {
+            eventil_video = data.eventil.user.presentations.map(
+              (item, index) => {
+                return (
+                  <div key={index}>
+                    {item.youtubeVideo
+                      ? <div>
+                          <iframe
+                            title={index}
+                            src={
+                              "http://www.youtube.com/embed/" +
+                              item.youtubeVideo.id
+                            }
+                            width="560"
+                            height="315"
+                          />
+                          <p className="video-title">
+                            {item.draft.title}
+                          </p>
+                          <div className="video-stats">
+                            <div>
+                              {item.youtubeVideo.statistics.viewCount} views
+                            </div>
+                            <div className="thumbs">
+                              <div>
+                                <i className="fas fa-thumbs-up" />{" "}
+                                {item.youtubeVideo.statistics.likeCount}
+                              </div>
+                              <div>
+                                <i className="fas fa-thumbs-down" />{" "}
+                                {item.youtubeVideo.statistics.dislikeCount}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      : " "}
+                  </div>
+                );
+              }
+            );
+          }
+          if (idx(data, _ => _.descuri.other)) {
+            descuri_video = data.descuri.other.map(item => {
+              return item.descuri.youTube.map((item, index) => {
+                return (
+                  <div key={index}>
+                    <iframe
+                      title={index}
+                      src={
+                        "http://www.youtube.com/embed/" +
+                        item.uri.split("v=")[1]
+                      }
+                      width="560"
+                      height="315"
+                    />
+                    <DescuriYoutubeStats videoId={item.uri.split("v=")[1]} />
+                  </div>
+                );
+              });
+            });
+          }
+          return (
+            <div className="tab-youtube">
+              {eventil_video || descuri_video[0][0]
+                ? <div>
+                    <div>
+                      {eventil_video}
+                    </div>
+                    <div>
+                      {descuri_video}
+                    </div>
+                  </div>
+                : <div>No Data Found</div>}
+            </div>
+          );
+        }}
+      </Query>
+    );
+  }
+}
 
 const GET_GithubQuery = gql`
   query($github: String!) {
@@ -275,7 +490,9 @@ class UserTabInfo extends Component {
           >
             <div className="tab-content" id="youtube-content">
               {this.state.youtube
-                ? "youtube"
+                ? <ApolloProvider client={client}>
+                    <YoutubeInfo />
+                  </ApolloProvider>
                 : this.renderButton("Youtube", "youtube")}
             </div>
           </TabPane>
