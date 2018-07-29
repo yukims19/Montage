@@ -2,6 +2,21 @@ import React, { Component } from "react";
 import logo from "./logo.svg";
 import { Tabs, Icon, Checkbox, Collapse } from "antd";
 import "./App.css";
+import { gql } from "apollo-boost";
+import { ApolloProvider, Query } from "react-apollo";
+import OneGraphApolloClient from "onegraph-apollo-client";
+import OneGraphAuth from "onegraph-auth";
+import idx from "idx";
+/*** Be sure to create an app on https://onegraph.com, replace the APP_ID here, and add the chrome-extension id to your CORS origins ***/
+const APP_ID = "59f1697f-4947-49c0-964e-8e3d4fa640be";
+const auth = new OneGraphAuth({
+  appId: APP_ID,
+  oauthFinishPath: "/index.html"
+});
+const client = new OneGraphApolloClient({
+  oneGraphAuth: auth
+});
+
 const TabPane = Tabs.TabPane;
 const CheckboxGroup = Checkbox.Group;
 const Panel = Collapse.Panel;
