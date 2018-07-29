@@ -24,7 +24,71 @@ const Panel = Collapse.Panel;
 const plainOptions = ["1 mathch", "2 mathch", "3 match"];
 const defaultCheckedList = ["1 mathch", "2 mathch", "3 match"];
 
+class LoginButton extends Component {
+  render() {
+    return (
+      <button
+        className={"loginbtn loginbtn-" + this.props.eventClass}
+        onClick={this.props.onClick}
+      >
+        <i className={"fab fa-" + this.props.eventClass} />
+        <span> </span>Login with {this.props.event}
+      </button>
+    );
+  }
+}
+
 class UserTabInfo extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      eventil: false,
+      github: false,
+      youtube: false,
+      twitter: false
+    };
+    this.isLoggedIn("eventil");
+    this.isLoggedIn("github");
+    this.isLoggedIn("youtube");
+    this.isLoggedIn("twitter");
+  }
+  isLoggedIn(event) {
+    auth.isLoggedIn(event).then(isLoggedIn => {
+      this.setState({
+        [event]: isLoggedIn
+      });
+    });
+  }
+  handleClick(service) {
+    try {
+      auth.login(service).then(() => {
+        auth.isLoggedIn(service).then(isLoggedIn => {
+          if (isLoggedIn) {
+            console.log("Successfully logged in to " + service);
+            this.setState({
+              [service]: isLoggedIn
+            });
+          } else {
+            console.log("Did not grant auth for service " + service);
+            this.setState({
+              service: isLoggedIn
+            });
+          }
+        });
+      });
+    } catch (e) {
+      console.error("Problem logging in", e);
+    }
+  }
+  renderButton(eventTitle, eventClass) {
+    return (
+      <LoginButton
+        event={eventTitle}
+        eventClass={eventClass}
+        onClick={() => this.handleClick(eventClass)}
+      />
+    );
+  }
   render() {
     return (
       <div className="right-tabs">
@@ -38,7 +102,9 @@ class UserTabInfo extends Component {
             key="1"
           >
             <div className="tab-content" id="github-content">
-              github
+              {this.state.github
+                ? "github"
+                : this.renderButton("GitHub", "github")}
             </div>
           </TabPane>
           <TabPane
@@ -50,7 +116,9 @@ class UserTabInfo extends Component {
             key="2"
           >
             <div className="tab-content" id="youtube-content">
-              Youtube
+              {this.state.youtube
+                ? "youtube"
+                : this.renderButton("Youtube", "youtube")}
             </div>
           </TabPane>
           <TabPane
@@ -62,7 +130,9 @@ class UserTabInfo extends Component {
             key="3"
           >
             <div className="tab-content" id="twitter-content">
-              Twitter
+              {this.state.twitter
+                ? "twitter"
+                : this.renderButton("Twitter", "twitter")}
             </div>
           </TabPane>
         </Tabs>
