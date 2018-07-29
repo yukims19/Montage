@@ -24,6 +24,162 @@ const Panel = Collapse.Panel;
 const plainOptions = ["1 mathch", "2 mathch", "3 match"];
 const defaultCheckedList = ["1 mathch", "2 mathch", "3 match"];
 
+let target = {
+  github: "sgrove",
+  twitter: "sgrove"
+};
+
+const GET_GithubQuery = gql`
+  query($github: String!) {
+    gitHub {
+      user(login: $github) {
+        id
+        avatarUrl
+        url
+        login
+        starredRepositories {
+          totalCount
+        }
+        followers {
+          totalCount
+        }
+        following {
+          totalCount
+        }
+        repositories(
+          first: 6
+          orderBy: { direction: DESC, field: UPDATED_AT }
+        ) {
+          nodes {
+            id
+            description
+            url
+            name
+            forks {
+              totalCount
+            }
+            stargazers {
+              totalCount
+            }
+            languages(first: 1, orderBy: { field: SIZE, direction: DESC }) {
+              edges {
+                size
+                node {
+                  id
+                  color
+                  name
+                }
+              }
+            }
+          }
+          totalCount
+        }
+      }
+    }
+  }
+`;
+
+class GithubInfo extends Component {
+  render() {
+    if (!target.github) {
+      return <div>No Data Found</div>;
+    }
+    return (
+      <Query query={GET_GithubQuery} variables={{ github: target.github }}>
+        {({ loading, error, data }) => {
+          if (loading) return <div>Loading...</div>;
+          if (error) {
+            console.log(error);
+            return <div>Uh oh, something went wrong!</div>;
+          }
+          if (!idx(data, _ => _.gitHub.user)) return <div>No Data Found</div>;
+          return (
+            <div className="tab-github">
+              <div className="github-summary">
+                <li>
+                  Total Repositories:{" "}
+                  <span>
+                    {idx(data, _ => _.gitHub.user.repositories.totalCount)}
+                  </span>
+                </li>
+                <li>
+                  Stars:{" "}
+                  <span>
+                    {idx(
+                      data,
+                      _ => _.gitHub.user.starredRepositories.totalCount
+                    )}
+                  </span>
+                </li>
+                <li>
+                  Follower:{" "}
+                  <span>
+                    {idx(data, _ => _.gitHub.user.followers.totalCount)}
+                  </span>
+                </li>
+                <li>
+                  Following:{" "}
+                  <span>
+                    {idx(data, _ => _.gitHub.user.following.totalCount)}
+                  </span>
+                </li>
+              </div>
+              <div className="repos">
+                {idx(
+                  data,
+                  _ => _.gitHub.user.repositories.nodes
+                ).map((item, index) => {
+                  return (
+                    <div className="repo-card" key={item.name}>
+                      <div className="card">
+                        <div className="card-body">
+                          <h5 className="card-title">
+                            <a href={item.url}>
+                              {item.name}
+                            </a>
+                          </h5>
+                          <p className="card-text">
+                            {item.description}
+                          </p>
+                          <div className="card-bottom">
+                            {item.languages.edges[0]
+                              ? <p>
+                                  <i
+                                    className="fas fa-circle"
+                                    style={{
+                                      color: item.languages.edges[0].node.color
+                                    }}
+                                  />
+                                  {item.languages.edges[0].node.name}
+                                </p>
+                              : " "}
+                            {item.stargazers
+                              ? <p>
+                                  <i className="fas fa-star" />
+                                  {item.stargazers.totalCount}
+                                </p>
+                              : " "}
+                            {item.forks
+                              ? <p>
+                                  <i className="fas fa-code-branch" />
+                                  {item.forks.totalCount}
+                                </p>
+                              : " "}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }}
+      </Query>
+    );
+  }
+}
+
 class LoginButton extends Component {
   render() {
     return (
@@ -103,7 +259,9 @@ class UserTabInfo extends Component {
           >
             <div className="tab-content" id="github-content">
               {this.state.github
-                ? "github"
+                ? <ApolloProvider client={client}>
+                    <GithubInfo />
+                  </ApolloProvider>
                 : this.renderButton("GitHub", "github")}
             </div>
           </TabPane>
