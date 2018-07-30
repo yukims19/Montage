@@ -6,13 +6,11 @@ const sqlite3 = require("sqlite3");
 const db = new sqlite3.Database("customers.db");
 
 app.get("/api/:id", (req, res) => {
-  var sql = 'SELECT name FROM customers where twitter="' + req.params.id + '"';
+  var sql = 'SELECT * FROM customers where twitter="' + req.params.id + '"';
   db.all(sql, (err, rows) => {
     console.log(rows);
     console.log(req.params.id);
-    const allUsernames = rows.map(e => e.name);
-    console.log(allUsernames);
-    res.send(allUsernames);
+    res.send(rows);
   });
   //res.send({ express: "Hello From Expres" });
 });

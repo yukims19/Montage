@@ -34,9 +34,9 @@ let target = {
   reddit: null
 };
 const GET_TwitterQuery = gql`
-  query {
+  query($twitter: String) {
     twitter {
-      user(screenName: "sgrove") {
+      user(screenName: $twitter) {
         id
         timeline {
           tweets {
@@ -69,11 +69,7 @@ class TwitterInfo extends Component {
       <Query
         query={GET_TwitterQuery}
         variables={{
-          hackernews: target.hackerNews,
-          github: target.gitHub,
-          twitter: target.twitter,
-          reddit: target.reddit,
-          URL: URL
+          twitter: this.props.restwitter
         }}
       >
         {({ loading, error, data }) => {
@@ -195,10 +191,11 @@ class TwitterInfo extends Component {
 }
 const GET_YoutubeQuery = gql`
   query(
-    $hackernews: String!
-    $github: String!
-    $twitter: String!
-    $reddit: String!
+    $hackernews: String
+    $github: String
+    $twitter: String
+    $reddit: String
+    $URL: String
   ) {
     eventil {
       user(
@@ -308,10 +305,10 @@ class YoutubeInfo extends Component {
         query={GET_YoutubeQuery}
         variables={{
           hackernews: target.hackerNews,
-          github: target.github,
-          twitter: target.twitter,
+          github: this.props.resgithub,
+          twitter: this.props.restwitter,
           reddit: target.reddit,
-          URL: URL
+          URL: this.props.resurl ? this.props.resurl : "/"
         }}
       >
         {({ loading, error, data }) => {
@@ -386,7 +383,8 @@ class YoutubeInfo extends Component {
           }
           return (
             <div className="tab-youtube">
-              {eventil_video || descuri_video[0][0]
+              {eventil_video ||
+              (descuri_video[0] ? descuri_video[0][0] : descuri_video[0])
                 ? <div>
                     <div>
                       {eventil_video}
@@ -456,11 +454,14 @@ const GET_GithubQuery = gql`
 
 class GithubInfo extends Component {
   render() {
-    if (!target.github) {
+    if (!this.props.resgithub) {
       return <div>No Data Found</div>;
     }
     return (
-      <Query query={GET_GithubQuery} variables={{ github: target.github }}>
+      <Query
+        query={GET_GithubQuery}
+        variables={{ github: this.props.resgithub }}
+      >
         {({ loading, error, data }) => {
           if (loading) return <div>Loading...</div>;
           if (error) {
@@ -635,7 +636,7 @@ class UserTabInfo extends Component {
             <div className="tab-content" id="github-content">
               {this.state.github
                 ? <ApolloProvider client={client}>
-                    <GithubInfo />
+                    <GithubInfo resgithub={this.props.resgithub} />
                   </ApolloProvider>
                 : this.renderButton("GitHub", "github")}
             </div>
@@ -651,7 +652,11 @@ class UserTabInfo extends Component {
             <div className="tab-content" id="youtube-content">
               {this.state.youtube
                 ? <ApolloProvider client={client}>
-                    <YoutubeInfo />
+                    <YoutubeInfo
+                      resgithub={this.props.resgithub}
+                      restwitter={this.props.restwitter}
+                      resurl={this.props.resurl}
+                    />
                   </ApolloProvider>
                 : this.renderButton("Youtube", "youtube")}
             </div>
@@ -667,7 +672,7 @@ class UserTabInfo extends Component {
             <div className="tab-content" id="twitter-content">
               {this.state.twitter
                 ? <ApolloProvider client={client}>
-                    <TwitterInfo />
+                    <TwitterInfo restwitter={this.props.restwitter} />
                   </ApolloProvider>
                 : this.renderButton("Twitter", "twitter")}
             </div>
@@ -685,29 +690,31 @@ class UserGeneralInfo extends Component {
         <img src={logo} />
         <div className="user-general-info">
           <div className="username">
-            <h3>Youxi Li</h3>
+            <h3>
+              {this.props.resname}
+            </h3>
             <small>
-              <cite title="San Diego, CA">
-                San Diego, CA <i className="fas fa-map-marker-alt" />
+              <cite title={this.props.reslocation}>
+                {this.props.reslocation} <i className="fas fa-map-marker-alt" />
               </cite>
             </small>
           </div>
           <div className="useraccounts">
             <ul>
               <li>
-                <i className="fas fa-globe" /> yosili.com
+                <i className="fas fa-globe" /> {this.props.resurl}
               </li>
               <li>
-                <i className="fab fa-github-square" /> yosili.com
+                <i className="fab fa-github-square" /> {this.props.resgithub}
               </li>
               <li>
-                <i className="fab fa-twitter-square" /> yosili.com
+                <i className="fab fa-twitter-square" /> {this.props.restwitter}
               </li>
               <li>
-                <i className="fab fa-reddit-square" /> yosili.com
+                <i className="fab fa-reddit-square" /> {this.props.resreddit}
               </li>
               <li>
-                <i className="fab fa-linkedin" /> yosili.com
+                <i className="fab fa-linkedin" /> {this.props.reslinkedin}
               </li>
             </ul>
           </div>
@@ -867,13 +874,27 @@ class App extends Component {
     super(props);
     this.state = {
       eventil: false,
-      response: ""
+      resname: null,
+      resurl: null,
+      restwitter: null,
+      resgithub: null,
+      restwitterAvatarUrl: null,
+      reslocation: null
     };
     this.isLoggedIn("eventil");
   }
   componentDidMount() {
     this.callApi()
-      .then(res => this.setState({ response: res }))
+      .then(res => {
+        this.setState({
+          resname: res[0].name,
+          resurl: res[0].url,
+          restwitter: res[0].twitter,
+          resgithub: res[0].github,
+          restwitterAvatarUrl: res[0].twitterAvatarUrl,
+          reslocation: res[0].location
+        });
+      })
       .catch(err => console.log(err));
   }
 
@@ -938,10 +959,6 @@ class App extends Component {
   render() {
     return (
       <div>
-        <p className="App-intro">
-          yo
-          {this.state.response}
-        </p>
         {this.state.github
           ? <div className="App">
               <div className="left-column">
@@ -953,8 +970,18 @@ class App extends Component {
                   <HeaderUser handleLogout={this.handleLogout.bind(this)} />
                 </ApolloProvider>
                 <div className="right-body">
-                  <UserGeneralInfo />
-                  <UserTabInfo />
+                  <UserGeneralInfo
+                    resname={this.state.resname}
+                    resurl={this.state.resurl}
+                    restwitter={this.state.restwitter}
+                    resgithub={this.state.resgithub}
+                    restwitterAvatarUrl={this.state.restwitterAvatarUrl}
+                    reslocation={this.state.reslocation}
+                  />
+                  <UserTabInfo
+                    restwitter={this.state.restwitter}
+                    resgithub={this.state.resgithub}
+                  />
                 </div>
               </div>
             </div>
