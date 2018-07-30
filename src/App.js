@@ -21,8 +21,8 @@ const TabPane = Tabs.TabPane;
 const CheckboxGroup = Checkbox.Group;
 const Panel = Collapse.Panel;
 
-const plainOptions = ["1 mathch", "2 mathch", "3 match"];
-const defaultCheckedList = ["1 mathch", "2 mathch", "3 match"];
+const plainOptions = ["1 match", "2 match", "3 match"];
+const defaultCheckedList = ["1 match", "2 match", "3 match"];
 
 const URL = "https://news.ycombinator.com/user?id=tlrobinson";
 //"http://www.riseos.com/";
@@ -32,7 +32,166 @@ let target = {
   hackerNews: null,
   reddit: null
 };
+const GET_TwitterQuery = gql`
+  query {
+    twitter {
+      user(screenName: "sgrove") {
+        id
+        timeline {
+          tweets {
+            id
+            favoriteCount
+            video {
+              id
+            }
+            createdAt
+            text
+            idStr
+            user {
+              id
+              screenName
+              name
+              profileImageUrlHttps
+              profileBannerUrl
+              profileUseBackgroundImage
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 
+class TwitterInfo extends Component {
+  render() {
+    return (
+      <Query
+        query={GET_TwitterQuery}
+        variables={{
+          hackernews: target.hackerNews,
+          github: target.gitHub,
+          twitter: target.twitter,
+          reddit: target.reddit,
+          URL: URL
+        }}
+      >
+        {({ loading, error, data }) => {
+          if (loading) return <div>Loading...</div>;
+          if (error) {
+            console.log(error);
+            return <div>Uh oh, something went wrong!</div>;
+          }
+          console.log(data);
+          if (idx(data, _ => _.twitter.user.timeline)) {
+            return (
+              <div className="tab-twitter">
+                {/* Twitter Background and avatar
+                                 <div className="twitter-back-img">
+                                 {idx(
+                                 data,
+                                 _ =>
+                                 _.twitter.user.timeline.tweets[0].user
+                                 .profileUseBackgroundImage
+                                 )
+                                 ? <img
+                                 alt="Twitter Background"
+                                 src={idx(
+                                 data,
+                                 _ =>
+                                 _.twitter.user.timeline.tweets[0].user
+                                 .profileBannerUrl
+                                 )}
+                                 />
+                                 : ""}
+                                 </div>
+                                 <div className="twitter-back-avatar-container">
+                                 <img
+                                 alt="Twitter Avatar"
+                                 className="twitter-back-avatar"
+                                 src={idx(
+                                 data,
+                                 _ =>
+                                 _.twitter.user.timeline.tweets[0].user
+                                 .profileImageUrlHttps
+                                 ).replace("_normal", "")}
+                                 />
+                                 </div>*/}
+                {data.twitter.user.timeline.tweets.map((item, index) => {
+                  return (
+                    <div className="card" key={index}>
+                      <div className="card-body">
+                        <img
+                          src={item.user.profileImageUrlHttps}
+                          alt="Avatar"
+                        />
+                        <div className="names">
+                          <h5 className="card-title">
+                            <a
+                              href={
+                                "https://twitter.com/" + item.user.screenName
+                              }
+                            >
+                              {item.user.name}
+                            </a>
+                          </h5>
+                          <p>
+                            @{item.user.screenName}
+                          </p>
+                        </div>
+                        <a
+                          href={
+                            "https://twitter.com/" +
+                            item.user.screenName +
+                            "/status/" +
+                            item.idStr
+                          }
+                        >
+                          <i className="fab fa-twitter twittericon" />
+                        </a>
+                        <p className="card-text">
+                          {item.text}
+                          <br />
+                          <span>
+                            {item.createdAt.split(" ")[3].split(":")[0] > 12
+                              ? item.createdAt.split(" ")[3].split(":")[0] -
+                                12 +
+                                ":" +
+                                item.createdAt.split(" ")[3].split(":")[1] +
+                                " PM"
+                              : item.createdAt
+                                  .split(" ")[3]
+                                  .split(":")
+                                  .slice(0, 2)
+                                  .join(":") + " AM"}
+                          </span>
+                          <span>
+                            {" - " +
+                              item.createdAt.split(" ").slice(1, 3).join(" ") +
+                              " " +
+                              item.createdAt.split(" ")[
+                                item.createdAt.split(" ").length - 1
+                              ]}
+                          </span>
+                        </p>
+                        <div className="card-bottom">
+                          <p>
+                            <i className="fas fa-heart" /> {item.favoriteCount}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          } else {
+            return <div>No Data Found</div>;
+          }
+        }}
+      </Query>
+    );
+  }
+}
 const GET_YoutubeQuery = gql`
   query(
     $hackernews: String!
@@ -506,7 +665,9 @@ class UserTabInfo extends Component {
           >
             <div className="tab-content" id="twitter-content">
               {this.state.twitter
-                ? "twitter"
+                ? <ApolloProvider client={client}>
+                    <TwitterInfo />
+                  </ApolloProvider>
                 : this.renderButton("Twitter", "twitter")}
             </div>
           </TabPane>

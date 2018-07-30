@@ -159,6 +159,66 @@
   margin: 0px 10px 0px 10px;
 }
 
+/* Twitter Tab */
+.tab-twitter .card {
+  max-width: 500px;
+  text-align: left;
+  margin: auto;
+  margin-bottom: 20px;
+}
+.tab-twitter .card-title {
+  margin: 0px;
+}
+.tab-twitter img {
+  height: 50px;
+  border-radius: 50%;
+  position: relative;
+  top: -10px;
+  margin-right: 10px;
+}
+.tab-twitter img,
+.tab-twitter .names,
+.tab-twitter .twittericon {
+  display: inline-block;
+}
+
+.tab-twitter .twitter-back-img {
+  overflow-y: hidden;
+  height: 220px;
+  background-color: #1da1f2;
+  //width: 100vh;
+}
+.tab-twitter .twitter-back-img img {
+  width: 100%;
+  height: auto;
+  border-radius: 0px;
+}
+.tab-twitter .twitter-back-avatar-container {
+  height: 100px;
+}
+.tab-twitter .twitter-back-avatar {
+  height: 160px;
+  top: -110px;
+  left: -30%;
+  border: 5px solid white;
+}
+
+.tab-twitter .twittericon {
+  position: absolute;
+  right: 1.25rem;
+  color: #2b7bb9;
+}
+.tab-twitter .card-text span {
+  color: grey;
+}
+.tab-twitter .card h5 a {
+  color: black;
+}
+.tab-twitter .card h5 a:hover {
+  text-decoration: underline;
+  color: #0366d6;
+}
+
 /*Login Buttons*/
 .loginbtn {
   border-radius: 3px;
