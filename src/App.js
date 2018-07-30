@@ -24,8 +24,9 @@ const Panel = Collapse.Panel;
 const plainOptions = ["1 match", "2 match", "3 match"];
 const defaultCheckedList = ["1 match", "2 match", "3 match"];
 
-const URL = "https://news.ycombinator.com/user?id=tlrobinson";
-//"http://www.riseos.com/";
+const URL = "http://www.riseos.com/";
+//"https://news.ycombinator.com/user?id=tlrobinson";
+//
 let target = {
   github: "sgrove",
   twitter: "sgrove",
@@ -307,7 +308,7 @@ class YoutubeInfo extends Component {
         query={GET_YoutubeQuery}
         variables={{
           hackernews: target.hackerNews,
-          github: target.gitHub,
+          github: target.github,
           twitter: target.twitter,
           reddit: target.reddit,
           URL: URL
@@ -801,45 +802,149 @@ class AllUsers extends Component {
   }
 }
 
-class App extends Component {
+const GET_HeaderUser = gql`
+  query {
+    me {
+      github {
+        name
+        avatarUrl
+      }
+    }
+  }
+`;
+
+class HeaderUser extends Component {
   render() {
     return (
-      <div className="App">
-        <div className="left-column">
-          <Filter />
-          <AllUsers />
-        </div>
-        <div className="right-column">
-          <header className="right-header">
-            <div className="dropdown">
-              <button
-                className="btn dropdown-toggle"
-                type="button"
-                id="dropdownMenuButton"
-                data-toggle="dropdown"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                <i>
-                  {" "}<img src={logo} />
-                </i>
-                Youxi Li
-              </button>
-              <div
-                className="dropdown-menu"
-                aria-labelledby="dropdownMenuButton"
-              >
-                <a className="dropdown-item" href="#">
-                  Logout
-                </a>
+      <Query query={GET_HeaderUser}>
+        {({ loading, error, data }) => {
+          if (loading) return <div>Loading...</div>;
+          if (error) {
+            console.log(error);
+            return <div>Uh oh, something went wrong!</div>;
+          }
+          return (
+            <header className="right-header">
+              <div className="dropdown">
+                <button
+                  className="btn dropdown-toggle"
+                  type="button"
+                  id="dropdownMenuButton"
+                  data-toggle="dropdown"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  <i>
+                    {" "}<img
+                      src={idx(data, _ => _.me.github.avatarUrl)}
+                      alt="Avatar"
+                    />
+                  </i>
+                  {idx(data, _ => _.me.github.name)}
+                </button>
+                <div
+                  className="dropdown-menu"
+                  aria-labelledby="dropdownMenuButton"
+                >
+                  <a
+                    className="dropdown-item"
+                    href="#"
+                    onClick={this.props.handleLogout}
+                  >
+                    Logout
+                  </a>
+                </div>
+              </div>
+            </header>
+          );
+        }}
+      </Query>
+    );
+  }
+}
+class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      eventil: false
+    };
+    this.isLoggedIn("eventil");
+  }
+  isLoggedIn(event) {
+    auth.isLoggedIn(event).then(isLoggedIn => {
+      this.setState({
+        [event]: isLoggedIn
+      });
+    });
+  }
+  handleClick(service) {
+    try {
+      auth.login(service).then(() => {
+        auth.isLoggedIn(service).then(isLoggedIn => {
+          if (isLoggedIn) {
+            console.log("Successfully logged in to " + service);
+            this.setState({
+              [service]: isLoggedIn
+            });
+          } else {
+            console.log("Did not grant auth for service " + service);
+            this.setState({
+              service: isLoggedIn
+            });
+          }
+        });
+      });
+    } catch (e) {
+      console.error("Problem logging in", e);
+    }
+  }
+  handleLogout() {
+    auth.logout("github").then(response => {
+      if (response.result === "success") {
+        console.log("Logout succeeded");
+        console.log(response);
+        this.setState({
+          github: false
+        });
+      } else {
+        console.log("Logout failed");
+      }
+    });
+  }
+  renderButton(eventTitle, eventClass) {
+    return (
+      <LoginButton
+        event={eventTitle}
+        eventClass={eventClass}
+        onClick={() => this.handleClick(eventClass)}
+      />
+    );
+  }
+  render() {
+    return (
+      <div>
+        {this.state.github
+          ? <div className="App">
+              <div className="left-column">
+                <Filter />
+                <AllUsers />
+              </div>
+              <div className="right-column">
+                <ApolloProvider client={client}>
+                  <HeaderUser handleLogout={this.handleLogout.bind(this)} />
+                </ApolloProvider>
+                <div className="right-body">
+                  <UserGeneralInfo />
+                  <UserTabInfo />
+                </div>
               </div>
             </div>
-          </header>
-          <div className="right-body">
-            <UserGeneralInfo />
-            <UserTabInfo />
-          </div>
-        </div>
+          : <div>
+              <div className="login-background">Montage</div>
+              <div className="login-eventilbtn">
+                {this.renderButton("GitHub", "github")}
+              </div>
+            </div>}
       </div>
     );
   }

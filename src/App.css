@@ -1,9 +1,17 @@
 @import '~antd/dist/antd.css';
-
 .App {
   display: flex;
 }
-
+.login-background {
+  background-color: #45c6ec;
+  color: white;
+  font-size: 3rem;
+  padding: 20px;
+}
+.login-eventilbtn {
+  text-align: center;
+  margin: 20px;
+}
 .left-column,
 .right-column {
   height: 100vh;
