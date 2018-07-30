@@ -866,10 +866,25 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      eventil: false
+      eventil: false,
+      response: ""
     };
     this.isLoggedIn("eventil");
   }
+  componentDidMount() {
+    this.callApi()
+      .then(res => this.setState({ response: res }))
+      .catch(err => console.log(err));
+  }
+
+  callApi = async () => {
+    const response = await fetch("/api/yukims19");
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
   isLoggedIn(event) {
     auth.isLoggedIn(event).then(isLoggedIn => {
       this.setState({
@@ -923,6 +938,10 @@ class App extends Component {
   render() {
     return (
       <div>
+        <p className="App-intro">
+          yo
+          {this.state.response}
+        </p>
         {this.state.github
           ? <div className="App">
               <div className="left-column">
