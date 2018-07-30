@@ -8,10 +8,10 @@ db.serialize(() => {
 
   // insert 3 rows of data:
   db.run(
-    "INSERT INTO customers VALUES ('Youxi Li', 'yosili.com', 'yukims19', 'yukims19', '', 'San Diego, CA')"
+    "INSERT INTO customers VALUES ('Youxi Li', 'http://yosili.com', 'yukims19', 'yukims19', 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png', 'San Diego, CA')"
   );
   db.run(
-    "INSERT INTO customers VALUES ('Sean Grove', 'http://www.riseos.com', 'sgrove', 'sgrove', '', 'San Francisco, CA')"
+    "INSERT INTO customers VALUES ('Sean Grove', 'http://www.riseos.com', 'sgrove', 'sgrove', 'https://pbs.twimg.com/profile_images/913444398133735427/7zjUK6pp_normal.jpg', 'San Francisco, CA')"
   );
 
   console.log("successfully created the users_to_pets table in pets.db");

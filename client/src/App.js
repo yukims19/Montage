@@ -308,7 +308,7 @@ class YoutubeInfo extends Component {
           github: this.props.resgithub,
           twitter: this.props.restwitter,
           reddit: target.reddit,
-          URL: this.props.resurl ? this.props.resurl : "/"
+          URL: this.props.resurl // ? this.props.resurl : "/"
         }}
       >
         {({ loading, error, data }) => {
@@ -981,6 +981,7 @@ class App extends Component {
                   <UserTabInfo
                     restwitter={this.state.restwitter}
                     resgithub={this.state.resgithub}
+                    resurl={this.state.resurl}
                   />
                 </div>
               </div>
