@@ -779,31 +779,51 @@ class Filter extends Component {
 }
 
 class AllUsers extends Component {
+  state = {
+    response: ""
+  };
+
+  componentDidMount() {
+    this.callUsers()
+      .then(res => this.setState({ response: res }))
+      .catch(err => console.log(err));
+  }
+
+  callUsers = async () => {
+    const response = await fetch("/users");
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+    return body;
+  };
   render() {
+    console.log(this.state.response);
+    console.log("hahahah");
     return (
       <div className="left-body">
-        <li>
-          <img src={logo} />
-          <div className="alluser-userinfo">
-            <p>Youxi Li</p>
-            <small>
-              <cite title="San Diego, CA">
-                San Diego, CA <i className="fas fa-map-marker-alt" />
-              </cite>
-            </small>
-          </div>
-        </li>
-        <li>
-          <img src={logo} />
-          <div className="alluser-userinfo">
-            <p>Youxi Li</p>
-            <small>
-              <cite title="San Diego, CA">
-                San Diego, CA <i className="fas fa-map-marker-alt" />
-              </cite>
-            </small>
-          </div>
-        </li>
+        {this.state.response
+          ? this.state.response.map(e => {
+              return (
+                <li key={e.twitter}>
+                  <img
+                    src={e.tiwtterAvatarUrl}
+                    alt="Avatar"
+                    onClick={() => this.props.handleUserClick(e.twitter)}
+                  />
+                  <div className="alluser-userinfo">
+                    <p onClick={() => this.props.handleUserClick(e.twitter)}>
+                      {e.name}
+                    </p>
+                    <small>
+                      <cite title={e.location}>
+                        {e.location} <i className="fas fa-map-marker-alt" />
+                      </cite>
+                    </small>
+                  </div>
+                </li>
+              );
+            })
+          : ""}
       </div>
     );
   }
@@ -883,6 +903,7 @@ class App extends Component {
     };
     this.isLoggedIn("eventil");
   }
+
   componentDidMount() {
     this.callApi()
       .then(res => {
@@ -899,13 +920,40 @@ class App extends Component {
   }
 
   callApi = async () => {
-    const response = await fetch("/api/yukims19");
+    const response = await fetch("/user/yukims19");
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);
 
     return body;
   };
+
+  callUser = async twitter => {
+    const response = await fetch("/user/" + twitter);
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
+
+  handleUserClick(twitter) {
+    console.log(twitter);
+    console.log("reached handerlererere!!!!");
+    this.callUser(twitter)
+      .then(res => {
+        this.setState({
+          resname: res[0].name,
+          resurl: res[0].url,
+          restwitter: res[0].twitter,
+          resgithub: res[0].github,
+          restwitterAvatarUrl: res[0].twitterAvatarUrl,
+          reslocation: res[0].location
+        });
+      })
+      .catch(err => console.log(err));
+  }
+
   isLoggedIn(event) {
     auth.isLoggedIn(event).then(isLoggedIn => {
       this.setState({
@@ -934,6 +982,7 @@ class App extends Component {
       console.error("Problem logging in", e);
     }
   }
+
   handleLogout() {
     auth.logout("github").then(response => {
       if (response.result === "success") {
@@ -963,7 +1012,7 @@ class App extends Component {
           ? <div className="App">
               <div className="left-column">
                 <Filter />
-                <AllUsers />
+                <AllUsers handleUserClick={this.handleUserClick.bind(this)} />
               </div>
               <div className="right-column">
                 <ApolloProvider client={client}>

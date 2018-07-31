@@ -49,6 +49,10 @@
   margin: 10px 0px 0px 0px;
   font-size: 1.2rem;
 }
+.left-body li p:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
 
 /* right-column*/
 .right-column {
