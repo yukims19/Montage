@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import logo from "./logo.svg";
-import { Tabs, Icon, Checkbox, Collapse } from "antd";
+import { Tabs, Icon, Collapse } from "antd";
 import "./App.css";
 import { gql } from "apollo-boost";
 import { ApolloProvider, Query } from "react-apollo";
@@ -18,7 +18,6 @@ const client = new OneGraphApolloClient({
 });
 
 const TabPane = Tabs.TabPane;
-const CheckboxGroup = Checkbox.Group;
 const Panel = Collapse.Panel;
 
 const plainOptions = ["1 match", "2 match", "3 match"];
@@ -728,27 +727,42 @@ class Filter extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      checkedList: defaultCheckedList,
-      indeterminate: true,
-      checkAll: false
+      filters: []
     };
   }
-
-  onChange = checkedList => {
+  handleClickAdd(input) {
+    //Need to check if the repo name is valid!
+    if (input.match(/[a-zA-Z]/)) {
+      const filterlist = this.state.filters.slice();
+      console.log(filterlist);
+      console.log(input);
+      if (!filterlist.includes(input)) {
+        console.log("what");
+        filterlist.push(input);
+      }
+      this.setState({
+        filters: filterlist
+      });
+      document.getElementById("post-filter").value = " ";
+    } else {
+      alert("Invalid input");
+    }
+  }
+  handleClickDelete(e) {
+    const filterlist = this.state.filters.slice();
+    var index = filterlist.indexOf(e);
+    var list1 = filterlist.slice(0, index);
+    var list2 = filterlist.slice(index + 1, filterlist.length);
+    var list = list1.concat(list2);
     this.setState({
-      checkedList,
-      indeterminate:
-        !!checkedList.length && checkedList.length < plainOptions.length,
-      checkAll: checkedList.length === plainOptions.length
+      filters: list
     });
-  };
+  }
 
-  onCheckAllChange = e => {
-    this.setState({
-      checkedList: e.target.checked ? plainOptions : [],
-      indeterminate: false,
-      checkAll: e.target.checked
-    });
+  keyPress = e => {
+    if (e.keyCode === 13) {
+      this.handleClickAdd(this.refs.postfilter.value);
+    }
   };
 
   render() {
@@ -756,21 +770,39 @@ class Filter extends Component {
       <div className="left-filter">
         <Collapse defaultActiveKey={["1"]}>
           <Panel header="Filter" key="1">
-            <div style={{ borderBottom: "1px solid #E9E9E9" }}>
-              <Checkbox
-                indeterminate={this.state.indeterminate}
-                onChange={this.onCheckAllChange}
-                checked={this.state.checkAll}
-              >
-                Check all
-              </Checkbox>
+            <div className="input-group mb-3">
+              <input
+                id="post-filter"
+                type="text"
+                className="form-control"
+                placeholder="Post ID"
+                aria-label="Post ID"
+                aria-describedby="basic-addon2"
+                ref="postfilter"
+                onKeyDown={this.keyPress}
+              />
+              <div className="input-group-append">
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  onClick={() =>
+                    this.handleClickAdd(this.refs.postfilter.value)}
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <br />
-            <CheckboxGroup
-              options={plainOptions}
-              value={this.state.checkedList}
-              onChange={this.onChange}
-            />
+            {this.state.filters.map(e => {
+              return (
+                <li key={e}>
+                  <i
+                    className="fas fa-times"
+                    onClick={() => this.handleClickDelete(e)}
+                  />{" "}
+                  {e}
+                </li>
+              );
+            })}
           </Panel>
         </Collapse>
       </div>
@@ -798,7 +830,6 @@ class AllUsers extends Component {
   };
   render() {
     console.log(this.state.response);
-    console.log("hahahah");
     return (
       <div className="left-body">
         {this.state.response
