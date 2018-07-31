@@ -10,7 +10,12 @@ function replaceAll(str, find, replace) {
 }
 
 app.get("/user/:id", (req, res) => {
-  var sql = 'SELECT * FROM customers where twitter="' + req.params.id + '"';
+  if (req.params.id == "initialdefault-firstuser") {
+    var sql = "SELECT * FROM customers where id = 1";
+  } else {
+    var sql = 'SELECT * FROM customers where twitter="' + req.params.id + '"';
+  }
+
   db.all(sql, (err, rows) => {
     console.log(rows);
     console.log(req.params.id);
