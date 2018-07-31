@@ -316,7 +316,6 @@ class YoutubeInfo extends Component {
             console.log(error);
             return <div>Uh oh, something went wrong!</div>;
           }
-          console.log(data);
           let eventil_video = null;
           let descuri_video = null;
           if (idx(data, _ => _.eventil.user.presentations)) {
@@ -724,47 +723,6 @@ class UserGeneralInfo extends Component {
 }
 
 class Filter extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      filters: []
-    };
-  }
-  handleClickAdd(input) {
-    //Need to check if the repo name is valid!
-    if (input.match(/[a-zA-Z]/)) {
-      const filterlist = this.state.filters.slice();
-      console.log(filterlist);
-      console.log(input);
-      if (!filterlist.includes(input)) {
-        console.log("what");
-        filterlist.push(input);
-      }
-      this.setState({
-        filters: filterlist
-      });
-      document.getElementById("post-filter").value = " ";
-    } else {
-      alert("Invalid input");
-    }
-  }
-  handleClickDelete(e) {
-    const filterlist = this.state.filters.slice();
-    var index = filterlist.indexOf(e);
-    var list1 = filterlist.slice(0, index);
-    var list2 = filterlist.slice(index + 1, filterlist.length);
-    var list = list1.concat(list2);
-    this.setState({
-      filters: list
-    });
-  }
-
-  keyPress = e => {
-    if (e.keyCode === 13) {
-      this.handleClickAdd(this.refs.postfilter.value);
-    }
-  };
-
   render() {
     return (
       <div className="left-filter">
@@ -779,25 +737,25 @@ class Filter extends Component {
                 aria-label="Post ID"
                 aria-describedby="basic-addon2"
                 ref="postfilter"
-                onKeyDown={this.keyPress}
+                onKeyDown={this.props.keyPress}
               />
               <div className="input-group-append">
                 <button
                   className="btn btn-secondary"
                   type="button"
                   onClick={() =>
-                    this.handleClickAdd(this.refs.postfilter.value)}
+                    this.props.handleClickAdd(this.refs.postfilter.value)}
                 >
                   +
                 </button>
               </div>
             </div>
-            {this.state.filters.map(e => {
+            {this.props.filters.map(e => {
               return (
                 <li key={e}>
                   <i
                     className="fas fa-times"
-                    onClick={() => this.handleClickDelete(e)}
+                    onClick={() => this.props.handleClickDelete(e)}
                   />{" "}
                   {e}
                 </li>
@@ -820,16 +778,24 @@ class AllUsers extends Component {
       .then(res => this.setState({ response: res }))
       .catch(err => console.log(err));
   }
-
+  componentDidUpdate(prevProps) {
+    if (this.props.filters !== prevProps.filters) {
+      console.log("need to test here!!!");
+      this.callUsers()
+        .then(res => this.setState({ response: res }))
+        .catch(err => console.log(err));
+    }
+  }
   callUsers = async () => {
-    const response = await fetch("/users");
+    let filterparam = "/" + this.props.filters;
+    console.log(filterparam);
+    const response = await fetch("/users" + filterparam);
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);
     return body;
   };
   render() {
-    console.log(this.state.response);
     return (
       <div className="left-body">
         {this.state.response
@@ -929,7 +895,8 @@ class App extends Component {
       restwitter: null,
       resgithub: null,
       restwitterAvatarUrl: null,
-      reslocation: null
+      reslocation: null,
+      filters: []
     };
     this.isLoggedIn("eventil");
   }
@@ -943,7 +910,8 @@ class App extends Component {
           restwitter: res[0].twitter,
           resgithub: res[0].github,
           restwitterAvatarUrl: res[0].twitterAvatarUrl,
-          reslocation: res[0].location
+          reslocation: res[0].location,
+          filters: []
         });
       })
       .catch(err => console.log(err));
@@ -967,9 +935,50 @@ class App extends Component {
     return body;
   };
 
+  handleClickDelete(e) {
+    let filterlist = this.state.filters.slice();
+    var index = filterlist.indexOf(e);
+    var list1 = filterlist.slice(0, index);
+    var list2 = filterlist.slice(index + 1, filterlist.length);
+    var list = list1.concat(list2);
+    this.setState({
+      filters: list
+    });
+  }
+
+  handleClickAdd(input) {
+    console.log("clicked");
+    //Need to check if the post name(id) is valid!
+    if (input.match(/[a-zA-Z^0-9]/)) {
+      let filterlist = this.state.filters.slice();
+      if (!filterlist.includes(input)) {
+        console.log("111111");
+        filterlist.push(input);
+      }
+      console.log(filterlist);
+      console.log(this.state.filters);
+      this.setState(
+        {
+          filters: filterlist
+        },
+        () => {
+          console.log(this.state.filters);
+        }
+      );
+      console.log(this.state.filters);
+      document.getElementById("post-filter").value = "";
+    } else {
+      alert("Invalid input");
+    }
+  }
+
+  keyPress(e) {
+    if (e.keyCode === 13) {
+      this.handleClickAdd(e.target.value);
+    }
+  }
+
   handleUserClick(twitter) {
-    console.log(twitter);
-    console.log("reached handerlererere!!!!");
     this.callUser(twitter)
       .then(res => {
         this.setState({
@@ -1041,8 +1050,16 @@ class App extends Component {
         {this.state.github
           ? <div className="App">
               <div className="left-column">
-                <Filter />
-                <AllUsers handleUserClick={this.handleUserClick.bind(this)} />
+                <Filter
+                  keyPress={this.keyPress.bind(this)}
+                  handleClickDelete={this.handleClickDelete.bind(this)}
+                  handleClickAdd={this.handleClickAdd.bind(this)}
+                  filters={this.state.filters}
+                />
+                <AllUsers
+                  handleUserClick={this.handleUserClick.bind(this)}
+                  filters={this.state.filters}
+                />
               </div>
               <div className="right-column">
                 <ApolloProvider client={client}>
