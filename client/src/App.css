@@ -33,6 +33,9 @@
 .left-filter .ant-collapse .ant-collapse-content {
   border: none;
 }
+.left-filter li {
+  font-size: 1rem;
+}
 .left-body li {
   display: flex;
   justify-content: flex-start;
@@ -48,6 +51,10 @@
 .left-body li p {
   margin: 10px 0px 0px 0px;
   font-size: 1.2rem;
+}
+.left-body li p:hover {
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 /* right-column*/
@@ -72,6 +79,7 @@
 
 .right-general-info {
   display: flex;
+  padding-left: 8%;
 }
 .right-general-info img {
   width: 150px;

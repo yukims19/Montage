@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import logo from "./logo.svg";
-import { Tabs, Icon, Checkbox, Collapse } from "antd";
+import { Tabs, Icon, Collapse } from "antd";
 import "./App.css";
 import { gql } from "apollo-boost";
 import { ApolloProvider, Query } from "react-apollo";
@@ -18,7 +18,6 @@ const client = new OneGraphApolloClient({
 });
 
 const TabPane = Tabs.TabPane;
-const CheckboxGroup = Checkbox.Group;
 const Panel = Collapse.Panel;
 
 const plainOptions = ["1 match", "2 match", "3 match"];
@@ -34,9 +33,9 @@ let target = {
   reddit: null
 };
 const GET_TwitterQuery = gql`
-  query {
+  query($twitter: String) {
     twitter {
-      user(screenName: "sgrove") {
+      user(screenName: $twitter) {
         id
         timeline {
           tweets {
@@ -69,11 +68,7 @@ class TwitterInfo extends Component {
       <Query
         query={GET_TwitterQuery}
         variables={{
-          hackernews: target.hackerNews,
-          github: target.gitHub,
-          twitter: target.twitter,
-          reddit: target.reddit,
-          URL: URL
+          twitter: this.props.restwitter
         }}
       >
         {({ loading, error, data }) => {
@@ -195,10 +190,11 @@ class TwitterInfo extends Component {
 }
 const GET_YoutubeQuery = gql`
   query(
-    $hackernews: String!
-    $github: String!
-    $twitter: String!
-    $reddit: String!
+    $hackernews: String
+    $github: String
+    $twitter: String
+    $reddit: String
+    $URL: String
   ) {
     eventil {
       user(
@@ -308,10 +304,10 @@ class YoutubeInfo extends Component {
         query={GET_YoutubeQuery}
         variables={{
           hackernews: target.hackerNews,
-          github: target.github,
-          twitter: target.twitter,
+          github: this.props.resgithub,
+          twitter: this.props.restwitter,
           reddit: target.reddit,
-          URL: URL
+          URL: this.props.resurl // ? this.props.resurl : "/"
         }}
       >
         {({ loading, error, data }) => {
@@ -320,7 +316,6 @@ class YoutubeInfo extends Component {
             console.log(error);
             return <div>Uh oh, something went wrong!</div>;
           }
-          console.log(data);
           let eventil_video = null;
           let descuri_video = null;
           if (idx(data, _ => _.eventil.user.presentations)) {
@@ -386,7 +381,8 @@ class YoutubeInfo extends Component {
           }
           return (
             <div className="tab-youtube">
-              {eventil_video || descuri_video[0][0]
+              {eventil_video ||
+              (descuri_video[0] ? descuri_video[0][0] : descuri_video[0])
                 ? <div>
                     <div>
                       {eventil_video}
@@ -456,11 +452,14 @@ const GET_GithubQuery = gql`
 
 class GithubInfo extends Component {
   render() {
-    if (!target.github) {
+    if (!this.props.resgithub) {
       return <div>No Data Found</div>;
     }
     return (
-      <Query query={GET_GithubQuery} variables={{ github: target.github }}>
+      <Query
+        query={GET_GithubQuery}
+        variables={{ github: this.props.resgithub }}
+      >
         {({ loading, error, data }) => {
           if (loading) return <div>Loading...</div>;
           if (error) {
@@ -635,7 +634,7 @@ class UserTabInfo extends Component {
             <div className="tab-content" id="github-content">
               {this.state.github
                 ? <ApolloProvider client={client}>
-                    <GithubInfo />
+                    <GithubInfo resgithub={this.props.resgithub} />
                   </ApolloProvider>
                 : this.renderButton("GitHub", "github")}
             </div>
@@ -651,7 +650,11 @@ class UserTabInfo extends Component {
             <div className="tab-content" id="youtube-content">
               {this.state.youtube
                 ? <ApolloProvider client={client}>
-                    <YoutubeInfo />
+                    <YoutubeInfo
+                      resgithub={this.props.resgithub}
+                      restwitter={this.props.restwitter}
+                      resurl={this.props.resurl}
+                    />
                   </ApolloProvider>
                 : this.renderButton("Youtube", "youtube")}
             </div>
@@ -667,7 +670,7 @@ class UserTabInfo extends Component {
             <div className="tab-content" id="twitter-content">
               {this.state.twitter
                 ? <ApolloProvider client={client}>
-                    <TwitterInfo />
+                    <TwitterInfo restwitter={this.props.restwitter} />
                   </ApolloProvider>
                 : this.renderButton("Twitter", "twitter")}
             </div>
@@ -682,32 +685,34 @@ class UserGeneralInfo extends Component {
   render() {
     return (
       <div className="right-general-info">
-        <img src={logo} />
+        <img src={this.props.restwitterAvatarUrl.replace("_normal", "")} />
         <div className="user-general-info">
           <div className="username">
-            <h3>Youxi Li</h3>
+            <h3>
+              {this.props.resname}
+            </h3>
             <small>
-              <cite title="San Diego, CA">
-                San Diego, CA <i className="fas fa-map-marker-alt" />
+              <cite title={this.props.reslocation}>
+                {this.props.reslocation} <i className="fas fa-map-marker-alt" />
               </cite>
             </small>
           </div>
           <div className="useraccounts">
             <ul>
               <li>
-                <i className="fas fa-globe" /> yosili.com
+                <i className="fas fa-globe" /> {this.props.resurl}
               </li>
               <li>
-                <i className="fab fa-github-square" /> yosili.com
+                <i className="fab fa-github-square" /> {this.props.resgithub}
               </li>
               <li>
-                <i className="fab fa-twitter-square" /> yosili.com
+                <i className="fab fa-twitter-square" /> {this.props.restwitter}
               </li>
               <li>
-                <i className="fab fa-reddit-square" /> yosili.com
+                <i className="fab fa-reddit-square" /> {this.props.resreddit}
               </li>
               <li>
-                <i className="fab fa-linkedin" /> yosili.com
+                <i className="fab fa-linkedin" /> {this.props.reslinkedin}
               </li>
             </ul>
           </div>
@@ -718,52 +723,44 @@ class UserGeneralInfo extends Component {
 }
 
 class Filter extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      checkedList: defaultCheckedList,
-      indeterminate: true,
-      checkAll: false
-    };
-  }
-
-  onChange = checkedList => {
-    this.setState({
-      checkedList,
-      indeterminate:
-        !!checkedList.length && checkedList.length < plainOptions.length,
-      checkAll: checkedList.length === plainOptions.length
-    });
-  };
-
-  onCheckAllChange = e => {
-    this.setState({
-      checkedList: e.target.checked ? plainOptions : [],
-      indeterminate: false,
-      checkAll: e.target.checked
-    });
-  };
-
   render() {
     return (
       <div className="left-filter">
         <Collapse defaultActiveKey={["1"]}>
           <Panel header="Filter" key="1">
-            <div style={{ borderBottom: "1px solid #E9E9E9" }}>
-              <Checkbox
-                indeterminate={this.state.indeterminate}
-                onChange={this.onCheckAllChange}
-                checked={this.state.checkAll}
-              >
-                Check all
-              </Checkbox>
+            <div className="input-group mb-3">
+              <input
+                id="post-filter"
+                type="text"
+                className="form-control"
+                placeholder="Post ID"
+                aria-label="Post ID"
+                aria-describedby="basic-addon2"
+                ref="postfilter"
+                onKeyDown={this.props.keyPress}
+              />
+              <div className="input-group-append">
+                <button
+                  className="btn btn-secondary"
+                  type="button"
+                  onClick={() =>
+                    this.props.handleClickAdd(this.refs.postfilter.value)}
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <br />
-            <CheckboxGroup
-              options={plainOptions}
-              value={this.state.checkedList}
-              onChange={this.onChange}
-            />
+            {this.props.filters.map(e => {
+              return (
+                <li key={e}>
+                  <i
+                    className="fas fa-times"
+                    onClick={() => this.props.handleClickDelete(e)}
+                  />{" "}
+                  {e}
+                </li>
+              );
+            })}
           </Panel>
         </Collapse>
       </div>
@@ -772,31 +769,57 @@ class Filter extends Component {
 }
 
 class AllUsers extends Component {
+  state = {
+    response: ""
+  };
+
+  componentDidMount() {
+    this.callUsers()
+      .then(res => this.setState({ response: res }))
+      .catch(err => console.log(err));
+  }
+  componentDidUpdate(prevProps) {
+    if (this.props.filters !== prevProps.filters) {
+      console.log("need to test here!!!");
+      this.callUsers()
+        .then(res => this.setState({ response: res }))
+        .catch(err => console.log(err));
+    }
+  }
+  callUsers = async () => {
+    let filterparam = "/" + this.props.filters;
+    console.log(filterparam);
+    const response = await fetch("/users" + filterparam);
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+    return body;
+  };
   render() {
     return (
       <div className="left-body">
-        <li>
-          <img src={logo} />
-          <div className="alluser-userinfo">
-            <p>Youxi Li</p>
-            <small>
-              <cite title="San Diego, CA">
-                San Diego, CA <i className="fas fa-map-marker-alt" />
-              </cite>
-            </small>
-          </div>
-        </li>
-        <li>
-          <img src={logo} />
-          <div className="alluser-userinfo">
-            <p>Youxi Li</p>
-            <small>
-              <cite title="San Diego, CA">
-                San Diego, CA <i className="fas fa-map-marker-alt" />
-              </cite>
-            </small>
-          </div>
-        </li>
+        {this.state.response
+          ? this.state.response.map(e => {
+              return (
+                <li
+                  key={e.twitter}
+                  onClick={() => this.props.handleUserClick(e.twitter)}
+                >
+                  <img src={e.twitterAvatarUrl} alt="Avatar" />
+                  <div className="alluser-userinfo">
+                    <p>
+                      {e.name}
+                    </p>
+                    <small>
+                      <cite title={e.location}>
+                        {e.location} <i className="fas fa-map-marker-alt" />
+                      </cite>
+                    </small>
+                  </div>
+                </li>
+              );
+            })
+          : ""}
       </div>
     );
   }
@@ -866,10 +889,110 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      eventil: false
+      eventil: false,
+      resname: null,
+      resurl: null,
+      restwitter: null,
+      resgithub: null,
+      restwitterAvatarUrl: null,
+      reslocation: null,
+      filters: []
     };
     this.isLoggedIn("eventil");
   }
+
+  componentDidMount() {
+    this.callFirstUser()
+      .then(res => {
+        this.setState({
+          resname: res[0].name,
+          resurl: res[0].url,
+          restwitter: res[0].twitter,
+          resgithub: res[0].github,
+          restwitterAvatarUrl: res[0].twitterAvatarUrl,
+          reslocation: res[0].location,
+          filters: []
+        });
+      })
+      .catch(err => console.log(err));
+  }
+
+  callFirstUser = async () => {
+    const response = await fetch("/user/initialdefault-firstuser");
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
+
+  callUser = async twitter => {
+    const response = await fetch("/user/" + twitter);
+    const body = await response.json();
+
+    if (response.status !== 200) throw Error(body.message);
+
+    return body;
+  };
+
+  handleClickDelete(e) {
+    let filterlist = this.state.filters.slice();
+    var index = filterlist.indexOf(e);
+    var list1 = filterlist.slice(0, index);
+    var list2 = filterlist.slice(index + 1, filterlist.length);
+    var list = list1.concat(list2);
+    this.setState({
+      filters: list
+    });
+  }
+
+  handleClickAdd(input) {
+    console.log("clicked");
+    //Need to check if the post name(id) is valid!
+    if (input.match(/[a-zA-Z^0-9]/)) {
+      let filterlist = this.state.filters.slice();
+      if (!filterlist.includes(input)) {
+        console.log("111111");
+        filterlist.push(input);
+      }
+      console.log(filterlist);
+      console.log(this.state.filters);
+      this.setState(
+        {
+          filters: filterlist
+        },
+        () => {
+          console.log(this.state.filters);
+        }
+      );
+      console.log(this.state.filters);
+      document.getElementById("post-filter").value = "";
+    } else {
+      alert("Invalid input");
+    }
+  }
+
+  keyPress(e) {
+    if (e.keyCode === 13) {
+      this.handleClickAdd(e.target.value);
+    }
+  }
+
+  handleUserClick(twitter) {
+    this.callUser(twitter)
+      .then(res => {
+        this.setState({
+          resname: res[0].name,
+          resurl: res[0].url,
+          restwitter: res[0].twitter,
+          resgithub: res[0].github,
+          restwitterAvatarUrl: res[0].twitterAvatarUrl,
+          reslocation: res[0].location
+        });
+      })
+      .catch(err => console.log(err));
+  }
+
   isLoggedIn(event) {
     auth.isLoggedIn(event).then(isLoggedIn => {
       this.setState({
@@ -898,6 +1021,7 @@ class App extends Component {
       console.error("Problem logging in", e);
     }
   }
+
   handleLogout() {
     auth.logout("github").then(response => {
       if (response.result === "success") {
@@ -926,16 +1050,35 @@ class App extends Component {
         {this.state.github
           ? <div className="App">
               <div className="left-column">
-                <Filter />
-                <AllUsers />
+                <Filter
+                  keyPress={this.keyPress.bind(this)}
+                  handleClickDelete={this.handleClickDelete.bind(this)}
+                  handleClickAdd={this.handleClickAdd.bind(this)}
+                  filters={this.state.filters}
+                />
+                <AllUsers
+                  handleUserClick={this.handleUserClick.bind(this)}
+                  filters={this.state.filters}
+                />
               </div>
               <div className="right-column">
                 <ApolloProvider client={client}>
                   <HeaderUser handleLogout={this.handleLogout.bind(this)} />
                 </ApolloProvider>
                 <div className="right-body">
-                  <UserGeneralInfo />
-                  <UserTabInfo />
+                  <UserGeneralInfo
+                    resname={this.state.resname}
+                    resurl={this.state.resurl}
+                    restwitter={this.state.restwitter}
+                    resgithub={this.state.resgithub}
+                    restwitterAvatarUrl={this.state.restwitterAvatarUrl}
+                    reslocation={this.state.reslocation}
+                  />
+                  <UserTabInfo
+                    restwitter={this.state.restwitter}
+                    resgithub={this.state.resgithub}
+                    resurl={this.state.resurl}
+                  />
                 </div>
               </div>
             </div>
