@@ -685,7 +685,7 @@ class UserGeneralInfo extends Component {
   render() {
     return (
       <div className="right-general-info">
-        <img src={logo} />
+        <img src={this.props.restwitterAvatarUrl.replace("_normal", "")} />
         <div className="user-general-info">
           <div className="username">
             <h3>
@@ -805,7 +805,7 @@ class AllUsers extends Component {
                   key={e.twitter}
                   onClick={() => this.props.handleUserClick(e.twitter)}
                 >
-                  <img src={e.tiwtterAvatarUrl} alt="Avatar" />
+                  <img src={e.twitterAvatarUrl} alt="Avatar" />
                   <div className="alluser-userinfo">
                     <p>
                       {e.name}
@@ -902,7 +902,7 @@ class App extends Component {
   }
 
   componentDidMount() {
-    this.callApi()
+    this.callFirstUser()
       .then(res => {
         this.setState({
           resname: res[0].name,
@@ -917,8 +917,8 @@ class App extends Component {
       .catch(err => console.log(err));
   }
 
-  callApi = async () => {
-    const response = await fetch("/user/yukims19");
+  callFirstUser = async () => {
+    const response = await fetch("/user/initialdefault-firstuser");
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);

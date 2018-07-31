@@ -79,6 +79,7 @@
 
 .right-general-info {
   display: flex;
+  padding-left: 8%;
 }
 .right-general-info img {
   width: 150px;
