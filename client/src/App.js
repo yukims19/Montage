@@ -835,14 +835,13 @@ class AllUsers extends Component {
         {this.state.response
           ? this.state.response.map(e => {
               return (
-                <li key={e.twitter}>
-                  <img
-                    src={e.tiwtterAvatarUrl}
-                    alt="Avatar"
-                    onClick={() => this.props.handleUserClick(e.twitter)}
-                  />
+                <li
+                  key={e.twitter}
+                  onClick={() => this.props.handleUserClick(e.twitter)}
+                >
+                  <img src={e.tiwtterAvatarUrl} alt="Avatar" />
                   <div className="alluser-userinfo">
-                    <p onClick={() => this.props.handleUserClick(e.twitter)}>
+                    <p>
                       {e.name}
                     </p>
                     <small>
