@@ -1,15 +1,15 @@
 const sqlite3 = require("sqlite3");
-const db = new sqlite3.Database("customers.db");
+const db = new sqlite3.Database("montage.db");
 db.serialize(() => {
   //customers table
   db.run(
-    "CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, url TEXT, twitter TEXT, github TEXT, twitterAvatarUrl TEXT, location TEXT)"
+    "CREATE TABLE people (id INTEGER PRIMARY KEY, name TEXT, url TEXT, twitter TEXT, github TEXT, AvatarUrl TEXT, location TEXT, email TEXT)"
   );
   db.run(
-    "INSERT INTO customers VALUES (1,'Youxi Li', 'http://yosili.com', 'yukims19', 'yukims19', 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png', 'San Diego, CA')"
+    "INSERT INTO customers VALUES (1,'Youxi Li', 'http://yosili.com', 'yukims19', 'yukims19', 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png', 'San Diego, CA', 'yukims19@gmail.com')"
   );
   db.run(
-    "INSERT INTO customers VALUES (2,'Sean Grove', 'http://www.riseos.com', 'sgrove', 'sgrove', 'https://pbs.twimg.com/profile_images/913444398133735427/7zjUK6pp_normal.jpg', 'San Francisco, CA')"
+    "INSERT INTO customers VALUES (2,'Sean Grove', 'http://www.riseos.com', 'sgrove', 'sgrove', 'https://pbs.twimg.com/profile_images/913444398133735427/7zjUK6pp_normal.jpg', 'San Francisco, CA', 'sgrove@gmail.com')"
   );
 
   console.log("successfully created the users_to_pets table in pets.db");

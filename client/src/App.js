@@ -685,7 +685,7 @@ class UserGeneralInfo extends Component {
   render() {
     return (
       <div className="right-general-info">
-        <img src={this.props.restwitterAvatarUrl.replace("_normal", "")} />
+        <img src={this.props.resAvatarUrl.replace("_normal", "")} />
         <div className="user-general-info">
           <div className="username">
             <h3>
@@ -805,7 +805,7 @@ class AllUsers extends Component {
                   key={e.twitter}
                   onClick={() => this.props.handleUserClick(e.twitter)}
                 >
-                  <img src={e.twitterAvatarUrl} alt="Avatar" />
+                  <img src={e.AvatarUrl} alt="Avatar" />
                   <div className="alluser-userinfo">
                     <p>
                       {e.name}
@@ -894,7 +894,7 @@ class App extends Component {
       resurl: null,
       restwitter: null,
       resgithub: null,
-      restwitterAvatarUrl: null,
+      resAvatarUrl: null,
       reslocation: null,
       filters: []
     };
@@ -909,7 +909,7 @@ class App extends Component {
           resurl: res[0].url,
           restwitter: res[0].twitter,
           resgithub: res[0].github,
-          restwitterAvatarUrl: res[0].twitterAvatarUrl,
+          resAvatarUrl: res[0].AvatarUrl,
           reslocation: res[0].location,
           filters: []
         });
@@ -986,7 +986,7 @@ class App extends Component {
           resurl: res[0].url,
           restwitter: res[0].twitter,
           resgithub: res[0].github,
-          restwitterAvatarUrl: res[0].twitterAvatarUrl,
+          resAvatarUrl: res[0].AvatarUrl,
           reslocation: res[0].location
         });
       })
@@ -1071,7 +1071,7 @@ class App extends Component {
                     resurl={this.state.resurl}
                     restwitter={this.state.restwitter}
                     resgithub={this.state.resgithub}
-                    restwitterAvatarUrl={this.state.restwitterAvatarUrl}
+                    resAvatarUrl={this.state.resAvatarUrl}
                     reslocation={this.state.reslocation}
                   />
                   <UserTabInfo
