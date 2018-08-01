@@ -1,3 +1,6 @@
+const sqlite3 = require("sqlite3");
+const db = new sqlite3.Database("montage.db");
+
 const fetch = require("node-fetch");
 const idx = require("idx");
 let peopledata = {
@@ -10,12 +13,14 @@ let peopledata = {
   email: null,
   company: null
 };
+let cursor = null;
+let hasNextPage = true;
 
 const peopledataQuery = `
-  query($slug: String!) {
+  query($slug: String!, $cursor: String!) {
   productHunt {
     post(slug: $slug) {
-      voters(first: 2) {
+      voters(first: 30, after: $cursor) {
         edges {
           node {
             websiteUrl
@@ -89,53 +94,92 @@ const getdata = (q, v) => {
     .then(json => {
       console.log(json);
       console.log("Setting data here");
+      cursor = json.data.productHunt.post.voters.pageInfo.endCursor;
+      hasNextPage = json.data.productHunt.post.voters.pageInfo.hasNextPage;
+      //Need to store startCursor in posts table to get new voted people
+      const startCursor =
+        json.data.productHunt.post.voters.pageInfo.startCursor;
+      console.log(cursor);
+      console.log(hasNextPage);
       const upvoters = json.data.productHunt.post.voters.edges;
-      const gitHubUser = idx(upvoters[0], _ => _.node.gitHubUser)
-        ? idx(upvoters[0], _ => _.node.gitHubUser)
-        : idx(
-            upvoters[0],
-            _ => _.node.twitterUser.homepageDescuri.gitHub.gitHubUser
-          );
-      const twitterUser = idx(upvoters[0], _ => _.node.twitterUser)
-        ? idx(upvoters[0], _ => _.node.twitterUser)
-        : "" /*github descuri here*/;
+      upvoters.forEach((e, index) => {
+        const gitHubUser = idx(e, _ => _.node.gitHubUser)
+          ? idx(e, _ => _.node.gitHubUser)
+          : idx(e, _ => _.node.twitterUser.homepageDescuri.gitHub.gitHubUser);
+        const twitterUser = idx(e, _ => _.node.twitterUser)
+          ? idx(e, _ => _.node.twitterUser)
+          : ""; /*github descuri here*/
 
-      peopledata.name = idx(upvoters[0], _ => _.node.name);
-      peopledata.twitter = upvoters[0].node.twitter_username;
-      //if null, look for github descuri
+        peopledata.name = idx(e, _ => _.node.name);
+        peopledata.twitter = e.node.twitter_username;
+        //if null, look for github descuri
 
-      peopledata.github = gitHubUser ? gitHubUser.login : null;
+        peopledata.github = gitHubUser ? gitHubUser.login : null;
 
-      peopledata.avatarURL = twitterUser
-        ? twitterUser.profileImageUrlHttps
-        : gitHubUser ? gitHubUser.avatarUrl : null;
+        peopledata.avatarURL = twitterUser
+          ? twitterUser.profileImageUrlHttps
+          : gitHubUser ? gitHubUser.avatarUrl : null;
 
-      peopledata.website = idx(upvoters[0], _ => _.node.website_url)
-        ? idx(upvoters[0], _ => _.node.website_url)
-        : idx(upvoters[0], _ => _.node.twitterUser.url)
-          ? twitterUser.url
-          : gitHubUser ? gitHubUser.websiteUrl : null;
+        peopledata.website = idx(e, _ => _.node.website_url)
+          ? idx(e, _ => _.node.website_url)
+          : idx(e, _ => _.node.twitterUser.url)
+            ? twitterUser.url
+            : gitHubUser ? gitHubUser.websiteUrl : null;
 
-      peopledata.location = idx(upvoters[0], _ => _.node.twitterUser.location)
-        ? twitterUser.location
-        : gitHubUser ? gitHubUser.location : null;
+        peopledata.location = idx(e, _ => _.node.twitterUser.location)
+          ? twitterUser.location
+          : gitHubUser ? gitHubUser.location : null;
 
-      peopledata.company = gitHubUser ? gitHubUser.company : null;
+        peopledata.company = gitHubUser ? gitHubUser.company : null;
 
-      peopledata.email = idx(upvoters[0], _ => _.node.gitHubUser.email)
-        ? gitHubUser.email
-        : twitterUser
-          ? idx(twitterUser, _ => _.homepageDescuri.mailto)
+        peopledata.email = idx(e, _ => _.node.gitHubUser.email)
+          ? gitHubUser.email
+          : twitterUser
             ? idx(twitterUser, _ => _.homepageDescuri.mailto)
-            : null
-          : null;
+              ? idx(twitterUser, _ => _.homepageDescuri.mailto)
+              : null
+            : null;
 
-      console.log(peopledata);
+        let sql =
+          "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email) VALUES ('" +
+          peopledata.name +
+          "', '" +
+          peopledata.website +
+          "', '" +
+          peopledata.twitter +
+          "', '" +
+          peopledata.github +
+          "', '" +
+          peopledata.avatarURL +
+          "', '" +
+          peopledata.location +
+          "', '" +
+          peopledata.email +
+          "')";
+        db.serialize(() => {
+          db.run(sql);
+        });
+      });
+      if (hasNextPage == true) {
+        getdata(peopledataQuery, {
+          slug: "submarine-popper",
+          cursor: cursor
+        });
+      }
     });
 };
-const people_data = getdata(peopledataQuery, { slug: "startup-stash" });
+
+const people_data = getdata(peopledataQuery, {
+  slug: "submarine-popper",
+  cursor: cursor
+});
 
 /*
+  const people_data = getdata(peopledataQuery, {
+  slug: "startup-stash",
+  cursor: cursor
+  });
+
 const findVotesQuery = `query findVoters($cursor: String!) {
   productHunt {
     post(slug: "codezen") {
