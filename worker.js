@@ -3,18 +3,13 @@ const db = new sqlite3.Database("montage.db");
 
 const fetch = require("node-fetch");
 const idx = require("idx");
-let peopledata = {
-  name: null,
-  location: null,
-  website: null,
-  twitter: null,
-  github: null,
-  avatarURL: null,
-  email: null,
-  company: null
-};
+
 let cursor = null;
 let hasNextPage = true;
+
+db.serialize(() => {
+  db.run("INSERT INTO posts(slug) VALUES ('submarine-poppe');");
+});
 
 const peopledataQuery = `
   query($slug: String!, $cursor: String!) {
@@ -23,6 +18,7 @@ const peopledataQuery = `
       voters(first: 30, after: $cursor) {
         edges {
           node {
+            id
             websiteUrl
             gitHubUser {
               login
@@ -99,8 +95,26 @@ const getdata = (q, v) => {
       //Need to store startCursor in posts table to get new voted people
       const startCursor =
         json.data.productHunt.post.voters.pageInfo.startCursor;
+      db.serialize(() => {
+        db.run(
+          "UPDATE posts SET cursor = '" +
+            startCursor +
+            "' WHERE slug = 'submarine-poppe';"
+        );
+      });
       console.log(cursor);
       console.log(hasNextPage);
+      let peopledata = {
+        name: null,
+        location: null,
+        website: null,
+        twitter: null,
+        github: null,
+        avatarURL: null,
+        email: null,
+        company: null,
+        producthunt_id: null
+      };
       const upvoters = json.data.productHunt.post.voters.edges;
       upvoters.forEach((e, index) => {
         const gitHubUser = idx(e, _ => _.node.gitHubUser)
@@ -110,6 +124,7 @@ const getdata = (q, v) => {
           ? idx(e, _ => _.node.twitterUser)
           : ""; /*github descuri here*/
 
+        peopledata.producthunt_id = idx(e, _ => _.node.id);
         peopledata.name = idx(e, _ => _.node.name);
         peopledata.twitter = e.node.twitter_username;
         //if null, look for github descuri
@@ -141,7 +156,7 @@ const getdata = (q, v) => {
             : null;
 
         let sql =
-          "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email) VALUES ('" +
+          "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email, producthunt_id) VALUES ('" +
           peopledata.name +
           "', '" +
           peopledata.website +
@@ -155,9 +170,16 @@ const getdata = (q, v) => {
           peopledata.location +
           "', '" +
           peopledata.email +
+          "', '" +
+          peopledata.producthunt_id +
           "')";
         db.serialize(() => {
           db.run(sql);
+          db.run(
+            "INSERT INTO votes VALUES ((select id from people where producthunt_id = '" +
+              peopledata.producthunt_id +
+              "'),(select id from posts where slug = 'submarine-poppe'));"
+          );
         });
       });
       if (hasNextPage == true) {
@@ -173,54 +195,3 @@ const people_data = getdata(peopledataQuery, {
   slug: "submarine-popper",
   cursor: cursor
 });
-
-/*
-  const people_data = getdata(peopledataQuery, {
-  slug: "startup-stash",
-  cursor: cursor
-  });
-
-const findVotesQuery = `query findVoters($cursor: String!) {
-  productHunt {
-    post(slug: "codezen") {
-      voters(after: $cursor) {
-        pageInfo {
-          hasPreviousPage
-          hasNextPage
-          endCursor
-          startCursor
-        }
-        edges {
-          cursor
-          node {
-            first_name
-            name
-            followers_count
-            followings_count
-            twitterUser {
-              name
-              statusesCount
-              screenName
-              homepageDescuri {
-                mailto {
-                  address
-                }
-                other {
-                  descuri {
-                    mailto {
-                      address
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      votes_count
-      _id
-    }
-  }
-}
-`;
-*/
