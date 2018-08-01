@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const idx = require("idx");
 let peopledata = {
   name: null,
   location: null,
@@ -14,9 +15,10 @@ const peopledataQuery = `
   query($slug: String!) {
   productHunt {
     post(slug: $slug) {
-      voters(first: 1) {
+      voters(first: 2) {
         edges {
           node {
+            websiteUrl
             gitHubUser {
               login
               websiteUrl
@@ -83,41 +85,52 @@ const getdata = (q, v) => {
     }
   )
     .then(res => res.json())
+    .catch(error => error.json())
     .then(json => {
       console.log(json);
-      /*
       console.log("Setting data here");
-      console.log(json.data.productHunt.post.voters.edges[0].node.name);
-        const upvoters = json.data.productHunt.post.voters.edges;
+      const upvoters = json.data.productHunt.post.voters.edges;
+      const gitHubUser = idx(upvoters[0], _ => _.node.gitHubUser)
+        ? idx(upvoters[0], _ => _.node.gitHubUser)
+        : idx(
+            upvoters[0],
+            _ => _.node.twitterUser.homepageDescuri.gitHub.gitHubUser
+          );
+      const twitterUser = idx(upvoters[0], _ => _.node.twitterUser)
+        ? idx(upvoters[0], _ => _.node.twitterUser)
+        : "" /*github descuri here*/;
 
-      userdata.name = upvoters[0].node.name;
+      peopledata.name = idx(upvoters[0], _ => _.node.name);
+      peopledata.twitter = upvoters[0].node.twitter_username;
       //if null, look for github descuri
-      userdata.twitter = upvoters[0].node.twitter_username;
 
-      userdata.github = upvoters[0].node.gitHubUser.login;
-      // if not work ---> upvoters[0].node.twitterUser.homepageDescuri.gitHub.gitHubUser.login;
+      peopledata.github = gitHubUser ? gitHubUser.login : null;
 
-      userdata.avatarURL = upvoters[0].node.twitterUser.profileImageUrlHttps;
-      // if not work ---> upvoters[0].node.gitHubUser.avatarUrl;
-      //                      ----> upvoters[0].node.twitterUser.homepageDescuri.gitHub.gitHubUser.avatarUrl;
+      peopledata.avatarURL = twitterUser
+        ? twitterUser.profileImageUrlHttps
+        : gitHubUser ? gitHubUser.avatarUrl : null;
 
-      userdata.website = upvoters[0].node.twitterUser.url;
-      // if not work ---> if (upvoters[0].node.gitHubUser) upvoters[0].node.gitHubUser.websiteUrl;
-      //                  else upvoters[0].node.twitterUser.homepageDescuri.gitHub.gitHubUser.websiteUrl;
+      peopledata.website = idx(upvoters[0], _ => _.node.website_url)
+        ? idx(upvoters[0], _ => _.node.website_url)
+        : idx(upvoters[0], _ => _.node.twitterUser.url)
+          ? twitterUser.url
+          : gitHubUser ? gitHubUser.websiteUrl : null;
 
-      userdata.location = upvoters[0].node.twitterUser.location;
-      // if not work ---> if (upvoters[0].node.gitHubUser) upvoters[0].node.gitHubUser.location;
-      //                  else upvoters[0].node.twitterUser.homepageDescuri.gitHub.gitHubUser.location;
+      peopledata.location = idx(upvoters[0], _ => _.node.twitterUser.location)
+        ? twitterUser.location
+        : gitHubUser ? gitHubUser.location : null;
 
-      userdata.company = upvoters[0].node.gitHubUser.company;
-      //                   if(!upvoters[0].node.gitHubUser) upvoters[0].node.twitterUser.homepageDescuri.gitHub.gitHubUser.company;
+      peopledata.company = gitHubUser ? gitHubUser.company : null;
 
-      userdata.email = upvoters[0].node.gitHubUser.email;
-      //                   upvoters[0].node.twitterUser.homepageDescuri.mailto
-      //                   if(upvoters[0].node.twitterUser) upvoters[0].node.twitterUser.homepageDescuri.gitHub.gitHubUser.email;
-      //                   else [githubuser.homepageDescuri.mailto]
-      //                   ([githubuser.homepageDescuri.twitter.email])
-      console.log(userdata);*/
+      peopledata.email = idx(upvoters[0], _ => _.node.gitHubUser.email)
+        ? gitHubUser.email
+        : twitterUser
+          ? idx(twitterUser, _ => _.homepageDescuri.mailto)
+            ? idx(twitterUser, _ => _.homepageDescuri.mailto)
+            : null
+          : null;
+
+      console.log(peopledata);
     });
 };
 const people_data = getdata(peopledataQuery, { slug: "startup-stash" });
