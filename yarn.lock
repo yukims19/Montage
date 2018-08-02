@@ -468,6 +468,10 @@ iconv-lite@^0.4.4:
   dependencies:
     safer-buffer ">= 2.1.2 < 3"
 
+idx@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/idx/-/idx-2.4.0.tgz#e89e6650c889a44bf889f79d47f40fe09b4eeaa3"
+
 ignore-walk@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/ignore-walk/-/ignore-walk-3.0.1.tgz#a83e62e7d272ac0e3b551aaa82831a19b69f82f8"
@@ -958,7 +962,7 @@ spdx-license-ids@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/spdx-license-ids/-/spdx-license-ids-3.0.0.tgz#7a7cd28470cc6d3a1cfe6d66886f6bc430d3ac87"
 
-sqlite3@^4.0.0:
+sqlite3@^4.0.2:
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/sqlite3/-/sqlite3-4.0.2.tgz#1bbeb68b03ead5d499e42a3a1b140064791c5a64"
   dependencies:
