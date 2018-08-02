@@ -8,9 +8,9 @@ let cursor = null;
 let hasNextPage = true;
 
 db.serialize(() => {
-  db.run("INSERT INTO posts(slug) VALUES ('submarine-poppe');");
+  db.run("INSERT INTO posts(slug) VALUES ('gitweet');");
 });
-
+//Capitalize data
 const peopledataQuery = `
   query($slug: String!, $cursor: String!) {
   productHunt {
@@ -99,7 +99,7 @@ const getdata = (q, v) => {
         db.run(
           "UPDATE posts SET cursor = '" +
             startCursor +
-            "' WHERE slug = 'submarine-poppe';"
+            "' WHERE slug = 'gitweet';"
         );
       });
       console.log(cursor);
@@ -158,33 +158,29 @@ const getdata = (q, v) => {
         let sql =
           "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email, producthunt_id) VALUES ('" +
           peopledata.name +
-          "', '" +
-          peopledata.website +
-          "', '" +
-          peopledata.twitter +
-          "', '" +
-          peopledata.github +
-          "', '" +
-          peopledata.avatarURL +
-          "', '" +
-          peopledata.location +
-          "', '" +
-          peopledata.email +
-          "', '" +
-          peopledata.producthunt_id +
-          "')";
+          "'," +
+          (peopledata.website ? "'" + peopledata.website + "'," : "null,") +
+          (peopledata.twitter ? "'" + peopledata.twitter + "'," : "null,") +
+          (peopledata.github ? "'" + peopledata.github + "'," : "null,") +
+          (peopledata.avatarURL ? "'" + peopledata.avatarURL + "'," : "null,") +
+          (peopledata.location ? "'" + peopledata.location + "'," : "null,") +
+          (peopledata.email ? "'" + peopledata.email + "'," : "null,") +
+          (peopledata.producthunt_id
+            ? "'" + peopledata.producthunt_id + "'"
+            : "null") +
+          ")";
         db.serialize(() => {
           db.run(sql);
           db.run(
             "INSERT INTO votes VALUES ((select id from people where producthunt_id = '" +
               peopledata.producthunt_id +
-              "'),(select id from posts where slug = 'submarine-poppe'));"
+              "'),(select id from posts where slug = 'gitweet'));"
           );
         });
       });
       if (hasNextPage == true) {
         getdata(peopledataQuery, {
-          slug: "submarine-popper",
+          slug: "gitweet",
           cursor: cursor
         });
       }
@@ -192,6 +188,6 @@ const getdata = (q, v) => {
 };
 
 const people_data = getdata(peopledataQuery, {
-  slug: "submarine-popper",
+  slug: "gitweet",
   cursor: cursor
 });
