@@ -662,8 +662,8 @@ class UserGeneralInfo extends Component {
       <div className="right-general-info">
         <img
           src={
-            this.props.resAvatarUrl
-              ? this.props.resAvatarUrl.replace("_normal", "")
+            this.props.resavatarurl
+              ? this.props.resavatarurl.replace("_normal", "")
               : ""
           }
         />
@@ -771,7 +771,8 @@ class AllUsers extends Component {
     }
   }
   callUsers = async () => {
-    let filterparam = "/" + this.props.filters;
+    console.log("herherehrehrehrehrre");
+    let filterparam = "/" + this.props.filters.join("&");
     console.log(filterparam);
     const response = await fetch("/users" + filterparam);
     const body = await response.json();
@@ -785,8 +786,11 @@ class AllUsers extends Component {
         {this.state.response
           ? this.state.response.map(e => {
               return (
-                <li key={e.id} onClick={() => this.props.handleUserClick(e.id)}>
-                  <img src={e.AvatarUrl} alt="Avatar" />
+                <li
+                  key={e.producthunt_id}
+                  onClick={() => this.props.handleUserClick(e.producthunt_id)}
+                >
+                  <img src={e.avatarurl} alt="Avatar" />
                   <div className="alluser-userinfo">
                     <p>
                       {e ? e.name : ""}
@@ -876,7 +880,7 @@ class App extends Component {
       resurl: null,
       restwitter: null,
       resgithub: null,
-      resAvatarUrl: null,
+      resavatarurl: null,
       reslocation: null,
       resid: null,
       resemail: null,
@@ -888,15 +892,16 @@ class App extends Component {
   componentDidMount() {
     this.callFirstUser()
       .then(res => {
+        console.log(res);
         this.setState({
-          resname: res[0].name,
-          resurl: res[0].url,
-          restwitter: res[0].twitter,
-          resgithub: res[0].github,
-          resAvatarUrl: res[0].AvatarUrl,
-          reslocation: res[0].location,
-          resid: res[0].id,
-          resemail: res[0].email,
+          resname: res.name,
+          resurl: res.url,
+          restwitter: res.twitter,
+          resgithub: res.github,
+          resavatarurl: res.avatarurl,
+          reslocation: res.location,
+          resid: res.producthunt_id,
+          resemail: res.email,
           filters: []
         });
       })
@@ -965,17 +970,20 @@ class App extends Component {
   }
 
   handleUserClick(id) {
+    console.log("cliked");
+    console.log(id);
     this.callUser(id)
       .then(res => {
+        console.log(res);
         this.setState({
-          resname: res[0].name,
-          resurl: res[0].url,
-          restwitter: res[0].twitter,
-          resgithub: res[0].github,
-          resAvatarUrl: res[0].AvatarUrl,
-          reslocation: res[0].location,
-          resemail: res[0].email,
-          resid: res[0].id
+          resname: res.name,
+          resurl: res.url,
+          restwitter: res.twitter,
+          resgithub: res.github,
+          resavatarurl: res.avatarurl,
+          reslocation: res.location,
+          resemail: res.email,
+          resid: res.producthunt_id
         });
       })
       .catch(err => console.log(err));
@@ -1059,7 +1067,7 @@ class App extends Component {
                     resurl={this.state.resurl}
                     restwitter={this.state.restwitter}
                     resgithub={this.state.resgithub}
-                    resAvatarUrl={this.state.resAvatarUrl}
+                    resavatarurl={this.state.resavatarurl}
                     reslocation={this.state.reslocation}
                     resemail={this.state.resemail}
                   />
