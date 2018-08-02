@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import logo from "./logo.svg";
 import { Tabs, Icon, Collapse } from "antd";
 import "./App.css";
 import { gql } from "apollo-boost";
@@ -20,18 +19,6 @@ const client = new OneGraphApolloClient({
 const TabPane = Tabs.TabPane;
 const Panel = Collapse.Panel;
 
-const plainOptions = ["1 match", "2 match", "3 match"];
-const defaultCheckedList = ["1 match", "2 match", "3 match"];
-
-const URL = "http://www.riseos.com/";
-//"https://news.ycombinator.com/user?id=tlrobinson";
-//
-let target = {
-  github: "sgrove",
-  twitter: "sgrove",
-  hackerNews: null,
-  reddit: null
-};
 const GET_TwitterQuery = gql`
   query($twitter: String) {
     twitter {
@@ -68,7 +55,7 @@ class TwitterInfo extends Component {
       <Query
         query={GET_TwitterQuery}
         variables={{
-          twitter: this.props.restwitter
+          twitter: this.props.restwitter ? this.props.restwitter : ""
         }}
       >
         {({ loading, error, data }) => {
@@ -189,20 +176,9 @@ class TwitterInfo extends Component {
   }
 }
 const GET_YoutubeQuery = gql`
-  query(
-    $hackernews: String
-    $github: String
-    $twitter: String
-    $reddit: String
-    $URL: String
-  ) {
+  query($github: String, $twitter: String, $URL: String) {
     eventil {
-      user(
-        hackernews: $hackernews
-        github: $github
-        twitter: $twitter
-        reddit: $reddit
-      ) {
+      user(github: $github, twitter: $twitter) {
         id
         presentations {
           id
@@ -303,11 +279,9 @@ class YoutubeInfo extends Component {
       <Query
         query={GET_YoutubeQuery}
         variables={{
-          hackernews: target.hackerNews,
-          github: this.props.resgithub,
-          twitter: this.props.restwitter,
-          reddit: target.reddit,
-          URL: this.props.resurl // ? this.props.resurl : "/"
+          github: this.props.resgithub ? this.props.resgithub : "",
+          twitter: this.props.restwitter ? this.props.restwitter : "",
+          URL: this.props.resurl ? this.props.resurl : "" // ? this.props.resurl : "/"
         }}
       >
         {({ loading, error, data }) => {
@@ -318,47 +292,48 @@ class YoutubeInfo extends Component {
           }
           let eventil_video = null;
           let descuri_video = null;
-          if (idx(data, _ => _.eventil.user.presentations)) {
-            eventil_video = data.eventil.user.presentations.map(
-              (item, index) => {
-                return (
-                  <div key={index}>
+          /*###### Eventil
+                    if (idx(data, _ => _.eventil.user.presentations)) {
+                    eventil_video = data.eventil.user.presentations.map(
+                    (item, index) => {
+                    return (
+                    <div key={index}>
                     {item.youtubeVideo
-                      ? <div>
-                          <iframe
-                            title={index}
-                            src={
-                              "http://www.youtube.com/embed/" +
-                              item.youtubeVideo.id
-                            }
-                            width="560"
-                            height="315"
-                          />
-                          <p className="video-title">
-                            {item.draft.title}
-                          </p>
-                          <div className="video-stats">
-                            <div>
-                              {item.youtubeVideo.statistics.viewCount} views
-                            </div>
-                            <div className="thumbs">
-                              <div>
-                                <i className="fas fa-thumbs-up" />{" "}
-                                {item.youtubeVideo.statistics.likeCount}
-                              </div>
-                              <div>
-                                <i className="fas fa-thumbs-down" />{" "}
-                                {item.youtubeVideo.statistics.dislikeCount}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      : " "}
-                  </div>
-                );
-              }
-            );
-          }
+                    ? <div>
+                    <iframe
+                    title={index}
+                    src={
+                    "http://www.youtube.com/embed/" +
+                    item.youtubeVideo.id
+                    }
+                    width="560"
+                    height="315"
+                    />
+                    <p className="video-title">
+                    {item.draft.title}
+                    </p>
+                    <div className="video-stats">
+                    <div>
+                    {item.youtubeVideo.statistics.viewCount} views
+                    </div>
+                    <div className="thumbs">
+                    <div>
+                    <i className="fas fa-thumbs-up" />{" "}
+                    {item.youtubeVideo.statistics.likeCount}
+                    </div>
+                    <div>
+                    <i className="fas fa-thumbs-down" />{" "}
+                    {item.youtubeVideo.statistics.dislikeCount}
+                    </div>
+                    </div>
+                    </div>
+                    </div>
+                    : " "}
+                    </div>
+                    );
+                    }
+                    );
+                    }*/
           if (idx(data, _ => _.descuri.other)) {
             descuri_video = data.descuri.other.map(item => {
               return item.descuri.youTube.map((item, index) => {
@@ -373,7 +348,7 @@ class YoutubeInfo extends Component {
                       width="560"
                       height="315"
                     />
-                    <DescuriYoutubeStats videoId={item.uri.split("v=")[1]} />
+                    {/*<DescuriYoutubeStats videoId={item.uri.split("v=")[1]} />*/}
                   </div>
                 );
               });
@@ -685,7 +660,13 @@ class UserGeneralInfo extends Component {
   render() {
     return (
       <div className="right-general-info">
-        <img src={this.props.resAvatarUrl.replace("_normal", "")} />
+        <img
+          src={
+            this.props.resAvatarUrl
+              ? this.props.resAvatarUrl.replace("_normal", "")
+              : ""
+          }
+        />
         <div className="user-general-info">
           <div className="username">
             <h3>
@@ -699,6 +680,9 @@ class UserGeneralInfo extends Component {
           </div>
           <div className="useraccounts">
             <ul>
+              <li>
+                <i className="fas fa-envelope" /> {this.props.resemail}
+              </li>
               <li>
                 <i className="fas fa-globe" /> {this.props.resurl}
               </li>
@@ -801,18 +785,16 @@ class AllUsers extends Component {
         {this.state.response
           ? this.state.response.map(e => {
               return (
-                <li
-                  key={e.twitter}
-                  onClick={() => this.props.handleUserClick(e.twitter)}
-                >
+                <li key={e.id} onClick={() => this.props.handleUserClick(e.id)}>
                   <img src={e.AvatarUrl} alt="Avatar" />
                   <div className="alluser-userinfo">
                     <p>
-                      {e.name}
+                      {e ? e.name : ""}
                     </p>
                     <small>
-                      <cite title={e.location}>
-                        {e.location} <i className="fas fa-map-marker-alt" />
+                      <cite title={e ? e.location : ""}>
+                        {e ? e.location : ""}{" "}
+                        <i className="fas fa-map-marker-alt" />
                       </cite>
                     </small>
                   </div>
@@ -896,9 +878,11 @@ class App extends Component {
       resgithub: null,
       resAvatarUrl: null,
       reslocation: null,
+      resid: null,
+      resemail: null,
       filters: []
     };
-    this.isLoggedIn("eventil");
+    this.isLoggedIn("github");
   }
 
   componentDidMount() {
@@ -911,6 +895,8 @@ class App extends Component {
           resgithub: res[0].github,
           resAvatarUrl: res[0].AvatarUrl,
           reslocation: res[0].location,
+          resid: res[0].id,
+          resemail: res[0].email,
           filters: []
         });
       })
@@ -926,8 +912,8 @@ class App extends Component {
     return body;
   };
 
-  callUser = async twitter => {
-    const response = await fetch("/user/" + twitter);
+  callUser = async id => {
+    const response = await fetch("/user/" + id);
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);
@@ -978,8 +964,8 @@ class App extends Component {
     }
   }
 
-  handleUserClick(twitter) {
-    this.callUser(twitter)
+  handleUserClick(id) {
+    this.callUser(id)
       .then(res => {
         this.setState({
           resname: res[0].name,
@@ -987,7 +973,9 @@ class App extends Component {
           restwitter: res[0].twitter,
           resgithub: res[0].github,
           resAvatarUrl: res[0].AvatarUrl,
-          reslocation: res[0].location
+          reslocation: res[0].location,
+          resemail: res[0].email,
+          resid: res[0].id
         });
       })
       .catch(err => console.log(err));
@@ -1073,6 +1061,7 @@ class App extends Component {
                     resgithub={this.state.resgithub}
                     resAvatarUrl={this.state.resAvatarUrl}
                     reslocation={this.state.reslocation}
+                    resemail={this.state.resemail}
                   />
                   <UserTabInfo
                     restwitter={this.state.restwitter}
