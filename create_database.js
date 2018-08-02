@@ -1,9 +1,8 @@
 const { Client } = require("pg");
 
-const connectionString =
-  "postgresql://dbuser:secretpassword@database.server.com:3211/mydb";
-
-console.log("why?");
+var config = parse(
+  "postgres://someuser:somepassword@somehost:381/somedatabase"
+);
 
 const client = new Client({ connectionString: connectionString });
 client.connect();
@@ -14,7 +13,7 @@ client.query(
     console.log(err, res);
   }
 );
-client.query("CREATE TABLE votes (uid INT, pid INT)", (err, res) => {
+client.query("CREATE TABLE votes (uid TEXT, pid INT)", (err, res) => {
   console.log(err, res);
 });
 client.query(
