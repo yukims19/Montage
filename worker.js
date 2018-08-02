@@ -1,17 +1,25 @@
-const sqlite3 = require("sqlite3");
-const db = new sqlite3.Database("montage.db");
+const { Client } = require("pg");
+const escape = require("pg-escape");
+const connectionString =
+  "postgresql://dbuser:secretpassword@database.server.com:3211/mydb";
 
 const fetch = require("node-fetch");
 const idx = require("idx");
 
 let cursor = null;
 let hasNextPage = true;
+const productSlug = "submarine-popper";
+const client = new Client({ connectionString: connectionString });
+client.connect();
 
-db.serialize(() => {
-  db.run("INSERT INTO posts(slug) VALUES ('gitweet');");
+let sqlPostsSlug = escape("INSERT INTO posts(slug) VALUES (%L);", productSlug);
+
+client.query(sqlPostsSlug, (err, res) => {
+  console.log(err, res);
 });
+
 //Capitalize data
-const peopledataQuery = `
+const peopleDataQuery = `
   query($slug: String!, $cursor: String!) {
   productHunt {
     post(slug: $slug) {
@@ -80,7 +88,7 @@ const getdata = (q, v) => {
       method: "POST",
       body: JSON.stringify(bodycontent),
       headers: {
-        Authentication: "Bearer 82FX1XXuI6Zkp7MMvJHtvfCStQbDyEcJOyiXUG3ZkNU",
+        Authentication: "Bearer -RKkmL84TUov58KZcIUoJLxGdypYmQ7k4tikDvWNYdw",
         Accept: "application/json"
       }
     }
@@ -95,23 +103,24 @@ const getdata = (q, v) => {
       //Need to store startCursor in posts table to get new voted people
       const startCursor =
         json.data.productHunt.post.voters.pageInfo.startCursor;
-      db.serialize(() => {
-        db.run(
-          "UPDATE posts SET cursor = '" +
-            startCursor +
-            "' WHERE slug = 'gitweet';"
-        );
+      let sqlPostsCursor = escape(
+        "UPDATE posts SET cursor = %L WHERE slug = %L;",
+        startCursor,
+        productSlug
+      );
+      client.query(sqlPostsCursor, (err, res) => {
+        console.log(err, res);
       });
       console.log(cursor);
       console.log(hasNextPage);
-      let peopledata = {
+      let peopleData = {
         name: null,
         location: null,
         website: null,
         twitter: null,
         github: null,
         avatarURL: null,
-        email: null,
+        email: [],
         company: null,
         producthunt_id: null
       };
@@ -124,70 +133,76 @@ const getdata = (q, v) => {
           ? idx(e, _ => _.node.twitterUser)
           : ""; /*github descuri here*/
 
-        peopledata.producthunt_id = idx(e, _ => _.node.id);
-        peopledata.name = idx(e, _ => _.node.name);
-        peopledata.twitter = e.node.twitter_username;
+        peopleData.producthunt_id = idx(e, _ => _.node.id);
+        peopleData.name = idx(e, _ => _.node.name);
+        peopleData.twitter = e.node.twitter_username;
         //if null, look for github descuri
 
-        peopledata.github = gitHubUser ? gitHubUser.login : null;
+        peopleData.github = gitHubUser ? gitHubUser.login : null;
 
-        peopledata.avatarURL = twitterUser
+        peopleData.avatarURL = twitterUser
           ? twitterUser.profileImageUrlHttps
           : gitHubUser ? gitHubUser.avatarUrl : null;
 
-        peopledata.website = idx(e, _ => _.node.website_url)
+        peopleData.website = idx(e, _ => _.node.website_url)
           ? idx(e, _ => _.node.website_url)
           : idx(e, _ => _.node.twitterUser.url)
             ? twitterUser.url
             : gitHubUser ? gitHubUser.websiteUrl : null;
 
-        peopledata.location = idx(e, _ => _.node.twitterUser.location)
+        peopleData.location = idx(e, _ => _.node.twitterUser.location)
           ? twitterUser.location
           : gitHubUser ? gitHubUser.location : null;
 
-        peopledata.company = gitHubUser ? gitHubUser.company : null;
+        peopleData.company = gitHubUser ? gitHubUser.company : null;
 
-        peopledata.email = idx(e, _ => _.node.gitHubUser.email)
+        peopleData.email = idx(e, _ => _.node.gitHubUser.email)
           ? gitHubUser.email
           : twitterUser
             ? idx(twitterUser, _ => _.homepageDescuri.mailto)
               ? idx(twitterUser, _ => _.homepageDescuri.mailto)
-              : null
-            : null;
+              : []
+            : [];
+        //Table people
+        let sqlPeople = escape(
+          "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email, producthunt_id) VALUES (%L,%L,%L,%L,%L,%L,%L,%L)",
+          peopleData.name,
+          peopleData.website,
+          peopleData.twitter,
+          peopleData.github,
+          peopleData.avatarURL,
+          peopleData.location,
+          peopleData.email.toString(),
+          peopleData.producthunt_id
+        );
+        client.query(sqlPeople, (err, res) => {
+          console.log(err, res);
+        });
 
-        let sql =
-          "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email, producthunt_id) VALUES ('" +
-          peopledata.name +
-          "'," +
-          (peopledata.website ? "'" + peopledata.website + "'," : "null,") +
-          (peopledata.twitter ? "'" + peopledata.twitter + "'," : "null,") +
-          (peopledata.github ? "'" + peopledata.github + "'," : "null,") +
-          (peopledata.avatarURL ? "'" + peopledata.avatarURL + "'," : "null,") +
-          (peopledata.location ? "'" + peopledata.location + "'," : "null,") +
-          (peopledata.email ? "'" + peopledata.email + "'," : "null,") +
-          (peopledata.producthunt_id
-            ? "'" + peopledata.producthunt_id + "'"
-            : "null") +
-          ")";
-        db.serialize(() => {
-          db.run(sql);
-          db.run(
-            "INSERT INTO votes VALUES ((select id from people where producthunt_id = '" +
-              peopledata.producthunt_id +
-              "'),(select id from posts where slug = 'gitweet'));"
-          );
+        //Table votes
+        let sqlVotes = escape(
+          "INSERT INTO votes VALUES(%L, (select id from posts where slug = %L))",
+          peopleData.producthunt_id,
+          productSlug
+        );
+        client.query(sqlVotes, (err, res) => {
+          console.log(err, res);
         });
       });
+
       if (hasNextPage == true) {
-        getdata(peopledataQuery, {
-          slug: "gitweet",
+        getdata(peopleDataQuery, {
+          slug: productSlug,
           cursor: cursor
         });
+      } else {
+        //client.end();
       }
     });
 };
 
-const people_data = getdata(peopledataQuery, {
-  slug: "gitweet",
+const people_data = getdata(peopleDataQuery, {
+  slug: productSlug,
   cursor: cursor
 });
+//client.end();
