@@ -988,7 +988,7 @@ class App extends Component {
       method: "POST",
       body: JSON.stringify({ token: token, userid: userid }),
       headers: { "Content-Type": "application/json" }
-    }).then(res => res.json());
+    }).then(res => res);
 
     const body = await response;
     if (response.status !== 200) throw Error(body.message);
