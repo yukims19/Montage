@@ -7,10 +7,10 @@ app.use(bodyParser.json());
 const port = process.env.PORT || 5000;
 const { Client } = require("pg");
 const escape = require("pg-escape");
+const worker = require("./worker");
 
-var config = parse(
-  "postgres://someuser:somepassword@somehost:381/somedatabase"
-);
+var connectionString =
+  "postgres://someuser:somepassword@somehost:381/somedatabase";
 
 const client = new Client({ connectionString: connectionString });
 client.connect();
@@ -67,14 +67,22 @@ app.get("/users", (req, res) => {
 
 app.get("/users/:posts", (req, res) => {
   const filters = req.params.posts.split("&");
+  const uid = "MDQ6VXNlcjI3Mzk5NjU2";
   let sqlfilter = filters.map(e => {
+    client.query(
+      escape("SELECT exists (SELECT 1 FROM posts WHERE slug = %L LIMIT 1)", e),
+      (error, response) => {
+        if (!response.rows[0].exists) {
+          worker.process(e, uid);
+        }
+      }
+    );
     return "'" + e + "'";
   });
-  var sql = escape(
+  const sql = escape(
     "SELECT * FROM people WHERE producthunt_id IN (SELECT uid FROM votes WHERE pid IN (SELECT id FROM posts WHERE slug in (%s)));",
     sqlfilter.toString()
   );
-
   let resData;
   client.query(sql, (error, response) => {
     //console.log(err, res);
