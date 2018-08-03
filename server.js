@@ -1,9 +1,13 @@
 const express = require("express");
-
+const bodyParser = require("body-parser");
 const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
 const port = process.env.PORT || 5000;
 const { Client } = require("pg");
 const escape = require("pg-escape");
+
 var config = parse(
   "postgres://someuser:somepassword@somehost:381/somedatabase"
 );
@@ -28,8 +32,26 @@ app.get("/user/:id", (req, res) => {
   client.query(sql, (error, response) => {
     //console.log(err, res);
     resData = response.rows[0];
-    console.log(resData);
     res.send(resData);
+  });
+});
+
+app.post("/login", (req, res) => {
+  const token = req.body.token;
+  const userid = req.body.userid;
+  console.log(token);
+  console.log(userid);
+  console.log("Got you login");
+  const sql = escape(
+    "UPDATE users SET token=%L WHERE userid=%L; INSERT INTO users (userid, token) SELECT %L, %L WHERE NOT EXISTS (SELECT * FROM users WHERE userid= %L);",
+    token,
+    userid,
+    userid,
+    token,
+    userid
+  );
+  client.query(sql, (error, response) => {
+    console.log(error, response);
   });
 });
 
@@ -39,7 +61,6 @@ app.get("/users", (req, res) => {
   client.query(sql, (error, response) => {
     //console.log(err, res);
     resData = response.rows;
-    console.log(resData);
     res.send(resData);
   });
 });
@@ -50,7 +71,7 @@ app.get("/users/:posts", (req, res) => {
     return "'" + e + "'";
   });
   var sql = escape(
-    "select * from people where producthunt_id in (select uid from votes where pid in (SELECT id FROM posts WHERE slug in (%s)));",
+    "SELECT * FROM people WHERE producthunt_id IN (SELECT uid FROM votes WHERE pid IN (SELECT id FROM posts WHERE slug in (%s)));",
     sqlfilter.toString()
   );
 
@@ -58,7 +79,6 @@ app.get("/users/:posts", (req, res) => {
   client.query(sql, (error, response) => {
     //console.log(err, res);
     resData = response.rows;
-    console.log(resData);
     res.send(resData);
   });
 });
