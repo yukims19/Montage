@@ -164,7 +164,7 @@ function getdata(q, v, token, slug, done) {
             : [];
         console.log("**********************");
         console.log(peopleData);
-        /*
+
         //Table people
         let sqlPeople = escape(
           "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email, producthunt_id) VALUES (%L,%L,%L,%L,%L,%L,%L,%L)",
@@ -189,7 +189,7 @@ function getdata(q, v, token, slug, done) {
         );
         client.query(sqlVotes, (err, res) => {
           console.log(err, res);
-        });*/
+        });
       });
 
       if (hasNextPage == true) {
@@ -252,7 +252,7 @@ function getPeopleDataWorker(q, v, token, slug) {
   });
 }
 
-function worker(slug, uid) {
+function process(slug, uid) {
   const productSlug = slug;
   let sqlPostsSlug = escape("INSERT INTO posts(slug) VALUES (%L);", slug);
   client.query(sqlPostsSlug, (err, res) => {
@@ -277,10 +277,10 @@ function worker(slug, uid) {
     });
 }
 module.exports = {
-  worker: (slug, uid) => {
-    worker(slug, uid);
+  process: (slug, uid) => {
+    process(slug, uid);
   }
 };
-worker("submarine-popper", "MDQ6VXNlcjI3Mzk5NjU2");
+//process("submarine-popper", "MDQ6VXNlcjI3Mzk5NjU2");
 
 //client.end();
