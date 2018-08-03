@@ -1,5 +1,6 @@
 const { Client } = require("pg");
 const escape = require("pg-escape");
+
 const connectionString =
   "postgresql://dbuser:secretpassword@database.server.com:3211/mydb";
 
@@ -12,13 +13,6 @@ const productSlug = "submarine-popper";
 const client = new Client({ connectionString: connectionString });
 client.connect();
 
-let sqlPostsSlug = escape("INSERT INTO posts(slug) VALUES (%L);", productSlug);
-
-client.query(sqlPostsSlug, (err, res) => {
-  console.log(err, res);
-});
-
-//Capitalize data
 const peopleDataQuery = `
   query($slug: String!, $cursor: String!) {
   productHunt {
@@ -77,7 +71,7 @@ const peopleDataQuery = `
     }
   }
 }`;
-const getdata = (q, v) => {
+function getdata(q, v) {
   var bodycontent = {
     query: q,
     variables: v
@@ -88,7 +82,7 @@ const getdata = (q, v) => {
       method: "POST",
       body: JSON.stringify(bodycontent),
       headers: {
-        Authentication: "Bearer -RKkmL84TUov58KZcIUoJLxGdypYmQ7k4tikDvWNYdw",
+        Authentication: "Bearer " + token,
         Accept: "application/json"
       }
     }
@@ -199,10 +193,22 @@ const getdata = (q, v) => {
         //client.end();
       }
     });
-};
+}
 
-const people_data = getdata(peopleDataQuery, {
-  slug: productSlug,
-  cursor: cursor
+let sqlPostsSlug = escape("INSERT INTO posts(slug) VALUES (%L);", productSlug);
+client.query(sqlPostsSlug, (err, res) => {
+  console.log(err, res);
 });
+let token;
+client
+  .query("SELECT * FROM USERS LIMIT 1;")
+  .then(res => (token = res.rows[0].token))
+  .catch(e => console.log(e))
+  .then(() => {
+    getdata(peopleDataQuery, {
+      slug: productSlug,
+      cursor: cursor
+    });
+  });
+
 //client.end();
