@@ -64,7 +64,6 @@ class TwitterInfo extends Component {
             console.log(error);
             return <div>Uh oh, something went wrong!</div>;
           }
-          console.log(data);
           if (idx(data, _ => _.twitter.user.timeline)) {
             return (
               <div className="tab-twitter">
@@ -764,16 +763,13 @@ class AllUsers extends Component {
   }
   componentDidUpdate(prevProps) {
     if (this.props.filters !== prevProps.filters) {
-      console.log("need to test here!!!");
       this.callUsers()
         .then(res => this.setState({ response: res }))
         .catch(err => console.log(err));
     }
   }
   callUsers = async () => {
-    console.log("herherehrehrehrehrre");
     let filterparam = "/" + this.props.filters.join("&");
-    console.log(filterparam);
     const response = await fetch("/users" + filterparam);
     const body = await response.json();
 
@@ -892,7 +888,6 @@ class App extends Component {
   componentDidMount() {
     this.callFirstUser()
       .then(res => {
-        console.log(res);
         this.setState({
           resname: res.name,
           resurl: res.url,
@@ -938,16 +933,12 @@ class App extends Component {
   }
 
   handleClickAdd(input) {
-    console.log("clicked");
     //Need to check if the post name(id) is valid!
     if (input.match(/[a-zA-Z^0-9]/)) {
       let filterlist = this.state.filters.slice();
       if (!filterlist.includes(input)) {
-        console.log("111111");
         filterlist.push(input);
       }
-      console.log(filterlist);
-      console.log(this.state.filters);
       this.setState(
         {
           filters: filterlist
@@ -956,7 +947,6 @@ class App extends Component {
           console.log(this.state.filters);
         }
       );
-      console.log(this.state.filters);
       document.getElementById("post-filter").value = "";
     } else {
       alert("Invalid input");
@@ -970,11 +960,8 @@ class App extends Component {
   }
 
   handleUserClick(id) {
-    console.log("cliked");
-    console.log(id);
     this.callUser(id)
       .then(res => {
-        console.log(res);
         this.setState({
           resname: res.name,
           resurl: res.url,
@@ -996,6 +983,17 @@ class App extends Component {
       });
     });
   }
+  callLogin = async (token, userid) => {
+    const response = await fetch("/login", {
+      method: "POST",
+      body: JSON.stringify({ token: token, userid: userid }),
+      headers: { "Content-Type": "application/json" }
+    }).then(res => res.json());
+
+    const body = await response;
+    if (response.status !== 200) throw Error(body.message);
+    return body;
+  };
   handleClick(service) {
     try {
       auth.login(service).then(() => {
@@ -1005,6 +1003,41 @@ class App extends Component {
             this.setState({
               [service]: isLoggedIn
             });
+
+            const token = JSON.parse(
+              localStorage.getItem(
+                "oneGraph:59f1697f-4947-49c0-964e-8e3d4fa640be"
+              )
+            )["accessToken"];
+            const GET_GithubId = `query {
+                                    me {
+                                      github {
+                                        id
+                                      }
+                                    }
+                                  }`;
+            fetch(
+              "https://serve.onegraph.com/dynamic?app_id=59f1697f-4947-49c0-964e-8e3d4fa640be",
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  query: GET_GithubId,
+                  variables: null
+                }),
+                headers: {
+                  Authentication: "Bearer " + token,
+                  Accept: "application/json"
+                }
+              }
+            )
+              .then(res => res.json())
+              .catch(error => error.json())
+              .then(json => {
+                const userid = json.data.me.github.id;
+                this.callLogin(token, userid).then(res => {
+                  console.log(res);
+                });
+              });
           } else {
             console.log("Did not grant auth for service " + service);
             this.setState({

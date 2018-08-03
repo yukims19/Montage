@@ -23,6 +23,12 @@ client.query(
     client.end();
   }
 );
+client.query(
+  "CREATE TABLE users (userid TEXT PRIMARY KEY, token TEXT);",
+  (err, res) => {
+    console.log(err, res);
+  }
+);
 
 /*SQLITE*/
 /*const sqlite3 = require("sqlite3");
