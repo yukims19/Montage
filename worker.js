@@ -1,14 +1,15 @@
 const { Client } = require("pg");
 const escape = require("pg-escape");
-
+/*
 const connectionString =
   "postgresql://dbuser:secretpassword@database.server.com:3211/mydb";
+  */
 
 const fetch = require("node-fetch");
 const idx = require("idx");
 const kue = require("kue"),
   queue = kue.createQueue();
-
+//kue.app.listen(3000);
 let cursor = null;
 let hasNextPage = true;
 
@@ -95,7 +96,12 @@ function getdata(q, v, token, slug, done) {
     .then(res => res.json())
     .catch(error => error.json())
     .then(json => {
-      console.log(json);
+      //Handle invalid slug
+      if (!json.data.productHunt.post) {
+        console.log("Invalid input");
+        done();
+        return;
+      }
       console.log("Setting data here");
       cursor = json.data.productHunt.post.voters.pageInfo.endCursor;
       hasNextPage = json.data.productHunt.post.voters.pageInfo.hasNextPage;
@@ -210,8 +216,23 @@ function getdata(q, v, token, slug, done) {
     });
 }
 
-function getPeopleDataWorker(q, v, token, slug) {
+function startProcessingPostJobs() {
+  queue.watchStuckJobs(1000);
+  queue.process("people_data", 20, function(job, done) {
+    console.log("procesing");
+    getdata(
+      job.data.query,
+      job.data.variables,
+      job.data.token,
+      job.data.slug,
+      done
+    );
+  });
+}
+
+function createPostQueue(q, v, token, slug) {
   console.log("!!!!!!!!!!!!!!!!!create job!!!!!!!");
+  console.log(token);
   let job = queue
     .create("people_data", {
       title: "Get People Data",
@@ -220,6 +241,7 @@ function getPeopleDataWorker(q, v, token, slug) {
       token: token,
       slug: slug
     })
+    //    .removeOnComplete(true)
     .save(function(err) {
       if (!err) console.log(job.id);
     });
@@ -234,26 +256,18 @@ function getPeopleDataWorker(q, v, token, slug) {
     .on("failed", function(errorMessage) {
       console.log("Job failed");
     })
+    .on("error", function(err) {
+      console.log("Oops... ", err);
+    })
     .on("progress", function(progress, data) {
       console.log(
         "\r  job #" + job.id + " " + progress + "% complete with data ",
         data
       );
     });
-  queue.process("people_data", function(job, done) {
-    console.log("procesing");
-    getdata(
-      job.data.query,
-      job.data.variables,
-      job.data.token,
-      job.data.slug,
-      done
-    );
-  });
 }
 
-function process(slug, uid) {
-  const productSlug = slug;
+function queuePostBySlug(slug, uid) {
   let sqlPostsSlug = escape("INSERT INTO posts(slug) VALUES (%L);", slug);
   client.query(sqlPostsSlug, (err, res) => {
     console.log(err, res);
@@ -261,11 +275,12 @@ function process(slug, uid) {
   let token;
   client
     .query(escape("SELECT * FROM USERS WHERE userid = %L;", uid))
-    .then(res => (token = res.rows[0].token))
+    .then(res => {
+      token = res.rows[0].token;
+    })
     .catch(e => console.log(e))
     .then(() => {
-      console.log(token);
-      getPeopleDataWorker(
+      createPostQueue(
         peopleDataQuery,
         {
           slug: slug,
@@ -276,11 +291,18 @@ function process(slug, uid) {
       );
     });
 }
-module.exports = {
-  process: (slug, uid) => {
-    process(slug, uid);
-  }
-};
-//process("submarine-popper", "MDQ6VXNlcjI3Mzk5NjU2");
 
+module.exports = {
+  queuePostBySlug
+};
+
+const role = process.env.ROLE || "server";
+function initWorker() {
+  startProcessingPostJobs();
+}
+
+if ("worker" === role) {
+  initWorker();
+  //  queuePostBySlug("test8", "MDQ6VXNlcjI3Mzk5NjU2");
+}
 //client.end();
