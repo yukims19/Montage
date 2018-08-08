@@ -760,6 +760,11 @@ class AllUsers extends Component {
     this.callUsers()
       .then(res => this.setState({ response: res }))
       .catch(err => console.log(err));
+    setInterval(() => {
+      this.callUsers()
+        .then(res => this.setState({ response: res }))
+        .catch(err => console.log(err));
+    }, 5000);
   }
   componentDidUpdate(prevProps) {
     if (this.props.filters !== prevProps.filters) {
