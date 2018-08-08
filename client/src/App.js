@@ -784,6 +784,22 @@ class AllUsers extends Component {
   render() {
     return (
       <div className="left-body">
+        <div className="loading">
+          <div className="lds-default">
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+            <div />
+          </div>
+        </div>
         {this.state.response
           ? this.state.response.map(e => {
               return (
