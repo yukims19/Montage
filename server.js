@@ -1,3 +1,4 @@
+require("dotenv").load();
 const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
@@ -62,35 +63,55 @@ app.get("/users", (req, res) => {
     res.send(resData);
   });
 });
-
+//Create jobs here
 app.get("/users/:posts", (req, res) => {
   const filters = req.params.posts.split("&");
+  const sqlfilter = filters.map(e => {
+    return "'" + e + "'";
+  });
   const uid = "MDQ6VXNlcjI3Mzk5NjU2";
-  let sqlfilter = filters.map(slug => {
-    client.query(
+  const newSlugs = [];
+  let pendingJobIds = [];
+  client
+    .query(
       escape(
-        "SELECT exists (SELECT 1 FROM posts WHERE slug = %L LIMIT 1)",
-        slug
-      ),
-      (error, response) => {
-        const isSlugNew = !response.rows[0].exists;
-        if (isSlugNew) {
-          worker.queuePostBySlug(slug, uid);
+        "SELECT slug FROM posts WHERE slug in ('%s')",
+        filters.join("', '")
+      )
+    )
+    .then(response => {
+      const existingSlugs = response.rows.map(row => {
+        return row["slug"];
+      });
+      console.log(existingSlugs);
+      console.log(filters);
+      filters.forEach(slug => {
+        if (!existingSlugs.includes(slug)) {
+          newSlugs.push(slug);
         }
+      });
+      console.log(newSlugs.length);
+      if (!newSlugs.length == 0) {
+        console.log("111111111");
+        newSlugs.map(slug => {
+          console.log("worker here++++++++++");
+          const job = worker.queuePostBySlug(slug, uid);
+          console.log(job);
+        });
+      } else {
+        console.log("222222222f");
       }
-    );
-    return "'" + slug + "'";
-  });
-  const sql = escape(
-    "SELECT * FROM people WHERE producthunt_id IN (SELECT uid FROM votes WHERE pid IN (SELECT id FROM posts WHERE slug in (%s)));",
-    sqlfilter.toString()
-  );
-  let resData;
-  client.query(sql, (error, response) => {
-    //console.log(err, res);
-    resData = response.rows;
-    res.send(resData);
-  });
+      const sql = escape(
+        "SELECT * FROM people WHERE producthunt_id IN (SELECT uid FROM votes WHERE pid IN (SELECT id FROM posts WHERE slug in (%s)));",
+        sqlfilter.toString()
+      );
+
+      client.query(sql, (error, response) => {
+        //console.log(err, res);
+        const resData = response.rows;
+        res.send(resData);
+      });
+    });
 });
 
 app.listen(port, () => console.log(`Listening on port ${port}`));
