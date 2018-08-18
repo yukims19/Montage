@@ -753,7 +753,9 @@ class Filter extends Component {
 
 class AllUsers extends Component {
   state = {
-    response: ""
+    response: "",
+    hasNewSlug: false
+    //TODO: need a function to change the state of hasNewSlug depending on the data loading
   };
 
   componentDidMount() {
@@ -779,27 +781,31 @@ class AllUsers extends Component {
     const body = await response.json();
 
     if (response.status !== 200) throw Error(body.message);
+    console.log("callusers body::");
+    console.log(body);
     return body;
   };
   render() {
     return (
       <div className="left-body">
-        <div className="loading">
-          <div className="lds-default">
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-            <div />
-          </div>
-        </div>
+        {this.state.hasNewSlug
+          ? <div className="loading">
+              <div className="lds-default">
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+                <div />
+              </div>
+            </div>
+          : ""}
         {this.state.response
           ? this.state.response.map(e => {
               return (
