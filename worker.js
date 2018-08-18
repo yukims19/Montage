@@ -22,7 +22,7 @@ const peopleDataQuery = `
         edges {
           node {
             id
-            websiteUrl
+            website_url
             gitHubUser {
               login
               websiteUrl
@@ -76,17 +76,19 @@ const peopleDataQuery = `
   }*/
 function getdata(q, v, token, slug, done) {
   console.log("+++++++++++++++++++++get data+++++++++++++++");
-  var bodycontent = {
-    query: q,
-    variables: v
-  };
+  console.log(token);
+  console.log(q);
+  console.log(v);
   fetch(
     "https://serve.onegraph.com/dynamic?app_id=59f1697f-4947-49c0-964e-8e3d4fa640be",
     {
       method: "POST",
-      body: JSON.stringify(bodycontent),
+      body: JSON.stringify({
+        query: q,
+        variables: v
+      }),
       headers: {
-        Authentication: "Bearer " + token,
+        //Authentication: "Bearer " + token,
         Accept: "application/json"
       }
     }
@@ -95,6 +97,7 @@ function getdata(q, v, token, slug, done) {
     .catch(error => error.json())
     .then(json => {
       //Handle invalid slug
+      console.log(json);
       if (!json.data.productHunt.post) {
         console.log("Invalid input");
         done();
@@ -168,7 +171,6 @@ function getdata(q, v, token, slug, done) {
             : [];
         console.log("**********************");
         console.log(peopleData);
-
         //Table people
         let sqlPeople = escape(
           "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email, producthunt_id) VALUES (%L,%L,%L,%L,%L,%L,%L,%L)",
@@ -248,6 +250,7 @@ function createPostQueue(q, v, token, slug) {
   job
     .on("complete", function(result) {
       console.log("Job completed with data ", result);
+      return "JOB COMPLETED!!!!!!!!!!!!!!!!!";
     })
     .on("failed attempt", function(errorMessage, doneAttempts) {
       console.log("Job failed");
@@ -259,11 +262,13 @@ function createPostQueue(q, v, token, slug) {
       console.log("Oops... ", err);
     })
     .on("progress", function(progress, data) {
+      return "JOB PROCESSING!!!!!!!!!!!!!!!";
       console.log(
         "\r  job #" + job.id + " " + progress + "% complete with data ",
         data
       );
     });
+  return job.id;
 }
 
 function queuePostBySlug(slug, uid) {
@@ -288,6 +293,7 @@ function queuePostBySlug(slug, uid) {
         token,
         slug
       );
+      return "hello dear";
     });
 }
 
@@ -300,7 +306,8 @@ function initWorker() {
   startProcessingPostJobs();
 }
 
-if ("worker" === role) {
+if (true) {
+  //"worker" === role) {
   initWorker();
   //  queuePostBySlug("test8", "MDQ6VXNlcjI3Mzk5NjU2");
 }
