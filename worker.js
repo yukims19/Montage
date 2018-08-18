@@ -1,9 +1,7 @@
+require("dotenv").load();
 const { Client } = require("pg");
 const escape = require("pg-escape");
-/*
-const connectionString =
-  "postgresql://dbuser:secretpassword@database.server.com:3211/mydb";
-  */
+const connectionString = process.env.DATABASE_URL;
 
 const fetch = require("node-fetch");
 const idx = require("idx");

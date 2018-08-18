@@ -8,8 +8,7 @@ const port = process.env.PORT || 5000;
 const { Client } = require("pg");
 const escape = require("pg-escape");
 const worker = require("./worker");
-var connectionString =
-  "postgres://someuser:somepassword@somehost:381/somedatabase";
+const connectionString = process.env.DATABASE_URL;
 
 const client = new Client({ connectionString: connectionString });
 client.connect();
