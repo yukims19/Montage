@@ -754,56 +754,91 @@ class Filter extends Component {
 class AllUsers extends Component {
   state = {
     response: "",
-    hasNewSlug: false
+    hasNewSlug: false,
+    peopleTotal: null,
+    peopleCurrent: null
     //TODO: need a function to change the state of hasNewSlug depending on the data loading
   };
 
   componentDidMount() {
     this.callUsers()
-      .then(res => this.setState({ response: res }))
+      .then(res =>
+        this.setState({
+          response: res.people,
+          peopleTotal: res.peopleTotal,
+          peopleCurrent: res.peopleCurrent
+        })
+      )
       .catch(err => console.log(err));
     setInterval(() => {
       this.callUsers()
-        .then(res => this.setState({ response: res }))
+        .then(res =>
+          this.setState({
+            response: res.people,
+            peopleTotal: res.peopleTotal,
+            peopleCurrent: res.peopleCurrent
+          })
+        )
         .catch(err => console.log(err));
     }, 5000);
   }
   componentDidUpdate(prevProps) {
     if (this.props.filters !== prevProps.filters) {
       this.callUsers()
-        .then(res => this.setState({ response: res }))
+        .then(res =>
+          this.setState({
+            response: res.people,
+            peopleTotal: res.peopleTotal,
+            peopleCurrent: res.peopleCurrent
+          })
+        )
         .catch(err => console.log(err));
     }
   }
   callUsers = async () => {
-    let filterparam = "/" + this.props.filters.join("&");
+    let filterparam =
+      this.props.filters.length > 0 ? "/" + this.props.filters.join("&") : "";
     const response = await fetch("/users" + filterparam);
     const body = await response.json();
-
     if (response.status !== 200) throw Error(body.message);
-    console.log("callusers body::");
-    console.log(body);
     return body;
   };
   render() {
     return (
       <div className="left-body">
-        {this.state.hasNewSlug
-          ? <div className="loading">
-              <div className="lds-default">
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
-                <div />
+        {this.state.peopleTotal > this.state.peopleCurrent
+          ? <div>
+              <div className="loading">
+                <div className="lds-default">
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                </div>
               </div>
+
+              {/* <div class="progress">
+                     <div
+                     class="progress-bar progress-bar-striped progress-bar-animated"
+                     role="progressbar"
+                     aria-valuenow={this.state.peopleCurrent}
+                     aria-valuemin="0"
+                     aria-valuemax={this.state.peopleTotal}
+                     style={{
+                     width:
+                     this.state.peopleCurrent / this.state.peopleTotal * 100 +
+                     "%"
+                     }}
+                     />
+                     </div>*/}
             </div>
           : ""}
         {this.state.response
@@ -966,14 +1001,9 @@ class App extends Component {
       if (!filterlist.includes(input)) {
         filterlist.push(input);
       }
-      this.setState(
-        {
-          filters: filterlist
-        },
-        () => {
-          console.log(this.state.filters);
-        }
-      );
+      this.setState({
+        filters: filterlist
+      });
       document.getElementById("post-filter").value = "";
     } else {
       alert("Invalid input");
@@ -1082,7 +1112,6 @@ class App extends Component {
     auth.logout("github").then(response => {
       if (response.result === "success") {
         console.log("Logout succeeded");
-        console.log(response);
         this.setState({
           github: false
         });
