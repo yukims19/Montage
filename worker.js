@@ -1,18 +1,19 @@
+require("dotenv").load();
 const { Client } = require("pg");
 const escape = require("pg-escape");
-
-const connectionString =
-  "postgresql://dbuser:secretpassword@database.server.com:3211/mydb";
+const connectionString = process.env.DATABASE_URL;
 
 const fetch = require("node-fetch");
 const idx = require("idx");
-
+const kue = require("kue"),
+  queue = kue.createQueue();
+//kue.app.listen(3000);
 let cursor = null;
 let hasNextPage = true;
-const productSlug = "submarine-popper";
-const client = new Client({ connectionString: connectionString });
-client.connect();
 
+const client = new Client({ connectionString: connectionString });
+
+client.connect();
 const peopleDataQuery = `
   query($slug: String!, $cursor: String!) {
   productHunt {
@@ -21,7 +22,7 @@ const peopleDataQuery = `
         edges {
           node {
             id
-            websiteUrl
+            website_url
             gitHubUser {
               login
               websiteUrl
@@ -33,29 +34,6 @@ const peopleDataQuery = `
             twitter_username
             id
             name
-            twitterUser {
-              screenName
-              name
-              url
-              location
-              profileImageUrlHttps
-              homepageDescuri {
-                gitHub {
-                  gitHubUser {
-                    avatarUrl
-                    websiteUrl
-                    email
-                    company
-                    location
-                    login
-                  }
-                }
-                mailto {
-                  address
-                  uri
-                }
-              }
-            }
           }
           cursor
         }
@@ -71,18 +49,43 @@ const peopleDataQuery = `
     }
   }
 }`;
-function getdata(q, v) {
-  var bodycontent = {
-    query: q,
-    variables: v
-  };
+
+/*
+  twitterUser {
+  screenName
+  name
+  url
+  location
+  profileImageUrlHttps
+  homepageDescuri {
+  gitHub {
+  gitHubUser {
+  avatarUrl
+  websiteUrl
+  email
+  company
+  location
+  login
+  }
+  }
+  mailto {
+  address
+  uri
+  }
+  }
+  }*/
+function getdata(q, v, token, slug, done) {
+  console.log("+++++++++++++++++++++get data+++++++++++++++");
   fetch(
     "https://serve.onegraph.com/dynamic?app_id=59f1697f-4947-49c0-964e-8e3d4fa640be",
     {
       method: "POST",
-      body: JSON.stringify(bodycontent),
+      body: JSON.stringify({
+        query: q,
+        variables: v
+      }),
       headers: {
-        Authentication: "Bearer " + token,
+        //Authentication: "Bearer " + token,
         Accept: "application/json"
       }
     }
@@ -90,8 +93,11 @@ function getdata(q, v) {
     .then(res => res.json())
     .catch(error => error.json())
     .then(json => {
-      console.log(json);
-      console.log("Setting data here");
+      if (!json.data.productHunt.post) {
+        console.log("Invalid input");
+        done();
+        return;
+      }
       cursor = json.data.productHunt.post.voters.pageInfo.endCursor;
       hasNextPage = json.data.productHunt.post.voters.pageInfo.hasNextPage;
       //Need to store startCursor in posts table to get new voted people
@@ -100,13 +106,11 @@ function getdata(q, v) {
       let sqlPostsCursor = escape(
         "UPDATE posts SET cursor = %L WHERE slug = %L;",
         startCursor,
-        productSlug
+        slug
       );
       client.query(sqlPostsCursor, (err, res) => {
         console.log(err, res);
       });
-      console.log(cursor);
-      console.log(hasNextPage);
       let peopleData = {
         name: null,
         location: null,
@@ -170,45 +174,129 @@ function getdata(q, v) {
           peopleData.producthunt_id
         );
         client.query(sqlPeople, (err, res) => {
-          console.log(err, res);
+          console.log(err);
         });
 
         //Table votes
         let sqlVotes = escape(
           "INSERT INTO votes VALUES(%L, (select id from posts where slug = %L))",
           peopleData.producthunt_id,
-          productSlug
+          slug
         );
         client.query(sqlVotes, (err, res) => {
-          console.log(err, res);
+          console.log(err);
         });
       });
 
       if (hasNextPage == true) {
-        getdata(peopleDataQuery, {
-          slug: productSlug,
-          cursor: cursor
-        });
+        getdata(
+          peopleDataQuery,
+          {
+            slug: slug,
+            cursor: cursor
+          },
+          token,
+          slug,
+          done
+        );
       } else {
         //client.end();
+        cursor = null;
+        done();
       }
     });
 }
 
-let sqlPostsSlug = escape("INSERT INTO posts(slug) VALUES (%L);", productSlug);
-client.query(sqlPostsSlug, (err, res) => {
-  console.log(err, res);
-});
-let token;
-client
-  .query("SELECT * FROM USERS LIMIT 1;")
-  .then(res => (token = res.rows[0].token))
-  .catch(e => console.log(e))
-  .then(() => {
-    getdata(peopleDataQuery, {
-      slug: productSlug,
-      cursor: cursor
-    });
+function startProcessingPostJobs() {
+  queue.watchStuckJobs(1000);
+  queue.process("people_data", 20, function(job, done) {
+    console.log("procesing");
+    getdata(
+      job.data.query,
+      job.data.variables,
+      job.data.token,
+      job.data.slug,
+      done
+    );
   });
+}
 
+function createPostQueue(q, v, token, slug) {
+  let job = queue
+    .create("people_data", {
+      title: "Get People Data",
+      query: q,
+      variables: v,
+      token: token,
+      slug: slug
+    })
+    //    .removeOnComplete(true)
+    .save(function(err) {
+      if (!err) console.log(job.id);
+    });
+
+  job
+    .on("complete", function(result) {
+      console.log("Job completed with data ", result);
+      return "JOB COMPLETED!";
+    })
+    .on("failed attempt", function(errorMessage, doneAttempts) {
+      console.log("Job failed");
+    })
+    .on("failed", function(errorMessage) {
+      console.log("Job failed");
+    })
+    .on("error", function(err) {
+      console.log("Oops... ", err);
+    })
+    .on("progress", function(progress, data) {
+      return "JOB PROCESSING!!!!!!!!!!!!!!!";
+      console.log(
+        "\r  job #" + job.id + " " + progress + "% complete with data ",
+        data
+      );
+    });
+  return job.id;
+}
+
+function queuePostBySlug(slug, uid) {
+  let sqlPostsSlug = escape("INSERT INTO posts(slug) VALUES (%L);", slug);
+  client.query(sqlPostsSlug, (err, res) => {
+    console.log(err, res);
+  });
+  let token;
+  client
+    .query(escape("SELECT * FROM USERS WHERE userid = %L;", uid))
+    .then(res => {
+      token = res.rows[0].token;
+    })
+    .catch(e => console.log(e))
+    .then(() => {
+      createPostQueue(
+        peopleDataQuery,
+        {
+          slug: slug,
+          cursor: cursor
+        },
+        token,
+        slug
+      );
+      return "hello dear";
+    });
+}
+
+module.exports = {
+  queuePostBySlug
+};
+
+const role = process.env.ROLE || "server";
+function initWorker() {
+  startProcessingPostJobs();
+}
+
+if (true) {
+  //"worker" === role) {
+  initWorker();
+  //  queuePostBySlug("test8", "MDQ6VXNlcjI3Mzk5NjU2");
+}
 //client.end();
