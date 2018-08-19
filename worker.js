@@ -76,9 +76,6 @@ const peopleDataQuery = `
   }*/
 function getdata(q, v, token, slug, done) {
   console.log("+++++++++++++++++++++get data+++++++++++++++");
-  console.log(token);
-  console.log(q);
-  console.log(v);
   fetch(
     "https://serve.onegraph.com/dynamic?app_id=59f1697f-4947-49c0-964e-8e3d4fa640be",
     {
@@ -96,14 +93,11 @@ function getdata(q, v, token, slug, done) {
     .then(res => res.json())
     .catch(error => error.json())
     .then(json => {
-      //Handle invalid slug
-      console.log(json);
       if (!json.data.productHunt.post) {
         console.log("Invalid input");
         done();
         return;
       }
-      console.log("Setting data here");
       cursor = json.data.productHunt.post.voters.pageInfo.endCursor;
       hasNextPage = json.data.productHunt.post.voters.pageInfo.hasNextPage;
       //Need to store startCursor in posts table to get new voted people
@@ -117,8 +111,6 @@ function getdata(q, v, token, slug, done) {
       client.query(sqlPostsCursor, (err, res) => {
         console.log(err, res);
       });
-      console.log(cursor);
-      console.log(hasNextPage);
       let peopleData = {
         name: null,
         location: null,
@@ -169,8 +161,6 @@ function getdata(q, v, token, slug, done) {
               ? idx(twitterUser, _ => _.homepageDescuri.mailto)
               : []
             : [];
-        console.log("**********************");
-        console.log(peopleData);
         //Table people
         let sqlPeople = escape(
           "INSERT INTO people(name, url, twitter, github, AvatarUrl, location, email, producthunt_id) VALUES (%L,%L,%L,%L,%L,%L,%L,%L)",
@@ -184,7 +174,7 @@ function getdata(q, v, token, slug, done) {
           peopleData.producthunt_id
         );
         client.query(sqlPeople, (err, res) => {
-          console.log(err, res);
+          console.log(err);
         });
 
         //Table votes
@@ -194,7 +184,7 @@ function getdata(q, v, token, slug, done) {
           slug
         );
         client.query(sqlVotes, (err, res) => {
-          console.log(err, res);
+          console.log(err);
         });
       });
 
@@ -232,8 +222,6 @@ function startProcessingPostJobs() {
 }
 
 function createPostQueue(q, v, token, slug) {
-  console.log("!!!!!!!!!!!!!!!!!create job!!!!!!!");
-  console.log(token);
   let job = queue
     .create("people_data", {
       title: "Get People Data",
@@ -250,7 +238,7 @@ function createPostQueue(q, v, token, slug) {
   job
     .on("complete", function(result) {
       console.log("Job completed with data ", result);
-      return "JOB COMPLETED!!!!!!!!!!!!!!!!!";
+      return "JOB COMPLETED!";
     })
     .on("failed attempt", function(errorMessage, doneAttempts) {
       console.log("Job failed");
